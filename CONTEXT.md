@@ -1,0 +1,53 @@
+# plazavea-cli — CONTEXT.md (para agentes AI)
+
+## Qué hace este CLI
+
+Buscar productos, gestionar carrito y ver pedidos de Plaza Vea desde terminal o vía MCP.
+Target: VTEX headless (tienda.plazavea.com.pe). Auth: cookie vtex_session.
+
+## Flujo típico de uso
+
+```bash
+plaza login                                    # abre browser, espera login manual
+plaza search "leche gloria" --limit 10         # busca con precios completos
+plaza simulate --sku 123456 --postal 15001     # verifica stock en local antes de agregar
+plaza add 123456 --dry-run                     # preview sin agregar
+plaza add 123456                               # agrega al carrito
+plaza cart                                     # ver carrito con totales
+plaza orders                                   # historial de pedidos
+plaza whoami                                   # estado de sesión + antigüedad cookie
+```
+
+## Output JSON (usar siempre en MCP)
+
+Todos los comandos aceptan `--output json`:
+```bash
+plaza search "arroz" --output json | jq '.[].prices'
+```
+
+## MCP tools disponibles
+
+| Tool | Input | Output |
+|---|---|---|
+| `search_products` | `query: string, limit?: number` | `ProductResult[]` |
+| `get_cart` | — | `CartNormalized` |
+| `add_to_cart` | `skuId: string, quantity?: number` | `CartNormalized` |
+| `remove_from_cart` | `index: number` | `CartNormalized` |
+| `get_orders` | `limit?: number` | `Order[]` |
+
+## Precios — estructura
+
+Cada producto tiene hasta 3 precios (no siempre aparecen los 3):
+- `prices.regular` — precio base, siempre presente
+- `prices.led` — Low Every Day / oferta sin tarjeta — null si no aplica
+- `prices.oh` — Tarjeta OH — null si no aplica
+
+`inStock` en search es **stock GLOBAL** — usar `simulate` para verificar stock del local.
+
+## Sesión y TTL
+
+- Sin login: solo `search` funciona (endpoint público VTEX)
+- Con login: todas las operaciones disponibles
+- TTL vtex_session: ~30 min estimado
+- Verificar antigüedad: `plaza whoami`
+- Si sesión expirada: `plaza login` de nuevo
