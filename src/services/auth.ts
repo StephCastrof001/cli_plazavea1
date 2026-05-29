@@ -1,5 +1,5 @@
 import { chromium } from "playwright";
-import { saveConfig, removeConfig } from "../config.js";
+import { removeConfig, saveConfig } from "../config.js";
 import { BASE_URL } from "../constants.js";
 
 const LOGIN_URL = `${BASE_URL}/login`;

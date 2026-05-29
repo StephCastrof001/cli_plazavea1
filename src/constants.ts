@@ -7,10 +7,8 @@ export const ENDPOINTS = {
   search: (term: string, from = 0, to = 49) =>
     `/api/catalog_system/pub/products/search/${encodeURIComponent(term)}?_from=${from}&_to=${to}`,
   orderForm: "/api/checkout/pub/orderForm",
-  addItem: (orderFormId: string) =>
-    `/api/checkout/pub/orderForm/${orderFormId}/items`,
-  updateItem: (orderFormId: string) =>
-    `/api/checkout/pub/orderForm/${orderFormId}/items/update`,
+  addItem: (orderFormId: string) => `/api/checkout/pub/orderForm/${orderFormId}/items`,
+  updateItem: (orderFormId: string) => `/api/checkout/pub/orderForm/${orderFormId}/items/update`,
   profile: "/api/checkout/pub/profiles",
   orders: "/api/oms/user/orders",
   simulate: "/api/checkout/pub/orderForms/simulation",

@@ -78,10 +78,8 @@ export function normalizeOrderForm(raw: unknown): CartNormalized {
     availability: item.availability,
   }));
 
-  const totalValue =
-    parsed.totalizers.find((t) => t.id === "Items")?.value ?? 0;
-  const shippingValue =
-    parsed.totalizers.find((t) => t.id === "Shipping")?.value ?? 0;
+  const totalValue = parsed.totalizers.find((t) => t.id === "Items")?.value ?? 0;
+  const shippingValue = parsed.totalizers.find((t) => t.id === "Shipping")?.value ?? 0;
 
   return {
     orderFormId: parsed.orderFormId,

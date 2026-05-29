@@ -68,9 +68,9 @@ export const VtexSearchRawSchema = z.array(
 // --- NORMALIZADO (lo que usa el CLI) ---
 
 export interface PriceInfo {
-  regular: number;       // precio base, siempre presente
-  led: number | null;    // Low Every Day / oferta sin tarjeta — null si no aplica
-  oh: number | null;     // Tarjeta OH — null si no aplica
+  regular: number; // precio base, siempre presente
+  led: number | null; // Low Every Day / oferta sin tarjeta — null si no aplica
+  oh: number | null; // Tarjeta OH — null si no aplica
 }
 
 export const ProductResultSchema = z.object({
@@ -96,14 +96,14 @@ function extractOhPrice(offer: z.infer<typeof CommercialOfferSchema>): number | 
     const name = t["<Name>k__BackingField"] ?? "";
     if (name.toLowerCase().includes("oh")) {
       const m = name.match(/S\/\s*([0-9]+[.,][0-9]+)/);
-      if (m?.[1]) return parseFloat(m[1].replace(",", "."));
+      if (m?.[1]) return Number.parseFloat(m[1].replace(",", "."));
     }
   }
   // Lugar 2: Installments[0].Name (formato alternativo de campaña)
   const instName = offer.Installments[0]?.Name ?? "";
   if (instName.toLowerCase().includes("oh")) {
     const m = instName.match(/S\/\s*([0-9]+[.,][0-9]+)/);
-    if (m?.[1]) return parseFloat(m[1].replace(",", "."));
+    if (m?.[1]) return Number.parseFloat(m[1].replace(",", "."));
   }
   return null;
 }
@@ -118,8 +118,7 @@ export function normalizeVtexSearch(rawArray: unknown[]): ProductResult[] {
     if (!item) throw new Error(`Product ${product.productId} has no items`);
 
     // Preferir seller "1" (Plaza Vea directo), fallback al primero
-    const seller =
-      item.sellers.find((s) => s.sellerId === "1") ?? item.sellers[0];
+    const seller = item.sellers.find((s) => s.sellerId === "1") ?? item.sellers[0];
     if (!seller) throw new Error(`Product ${product.productId} has no sellers`);
 
     const offer = seller.commertialOffer;

@@ -1,5 +1,5 @@
-import { BASE_URL, DEFAULT_HEADERS } from "./constants.js";
 import { getConfig } from "./config.js";
+import { BASE_URL, DEFAULT_HEADERS } from "./constants.js";
 
 export class AppError extends Error {
   constructor(
@@ -15,8 +15,8 @@ export class AppError extends Error {
 function parseErrorBody(body: string): string {
   try {
     const json = JSON.parse(body) as Record<string, unknown>;
-    if (typeof json["message"] === "string") return json["message"];
-    if (typeof json["error"] === "string") return json["error"];
+    if (typeof json.message === "string") return json.message;
+    if (typeof json.error === "string") return json.error;
   } catch {
     // not JSON
   }

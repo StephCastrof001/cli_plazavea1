@@ -1,10 +1,10 @@
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
-import { searchProducts } from "../services/products.js";
-import { getCart, addToCart, removeFromCart } from "../services/cart.js";
-import { getOrders } from "../services/orders.js";
 import { AppError } from "../http.js";
+import { addToCart, getCart, removeFromCart } from "../services/cart.js";
+import { getOrders } from "../services/orders.js";
+import { searchProducts } from "../services/products.js";
 
 const server = new Server(
   { name: "plazavea-cli", version: "3.0.0" },
@@ -37,7 +37,10 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
       inputSchema: {
         type: "object",
         properties: {
-          skuId: { type: "string", description: "SKU ID del producto (obtenido de search_products)" },
+          skuId: {
+            type: "string",
+            description: "SKU ID del producto (obtenido de search_products)",
+          },
           quantity: { type: "number", description: "Cantidad a agregar (default: 1)" },
         },
         required: ["skuId"],
@@ -79,8 +82,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
   try {
     if (name === "search_products") {
-      const query = String(a["query"] ?? "");
-      const limit = typeof a["limit"] === "number" ? a["limit"] : 10;
+      const query = String(a.query ?? "");
+      const limit = typeof a.limit === "number" ? a.limit : 10;
       const results = await searchProducts(query, limit);
       return { content: [{ type: "text", text: JSON.stringify(results, null, 2) }] };
     }
@@ -91,8 +94,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     }
 
     if (name === "add_to_cart") {
-      const skuId = String(a["skuId"] ?? "");
-      const quantity = typeof a["quantity"] === "number" ? a["quantity"] : 1;
+      const skuId = String(a.skuId ?? "");
+      const quantity = typeof a.quantity === "number" ? a.quantity : 1;
       const cart = await addToCart(skuId, quantity);
       const addedItem = cart.items.find((i) => i.id === skuId);
       const warning =
@@ -103,24 +106,21 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     }
 
     if (name === "remove_from_cart") {
-      const index = typeof a["index"] === "number" ? a["index"] : 0;
+      const index = typeof a.index === "number" ? a.index : 0;
       const cart = await removeFromCart(index);
       return { content: [{ type: "text", text: JSON.stringify(cart, null, 2) }] };
     }
 
     if (name === "get_orders") {
-      const limit = typeof a["limit"] === "number" ? a["limit"] : 10;
+      const limit = typeof a.limit === "number" ? a.limit : 10;
       const orders = await getOrders(limit);
       return { content: [{ type: "text", text: JSON.stringify(orders, null, 2) }] };
     }
 
     return errorResult(`Tool desconocida: ${name}`);
-
   } catch (e) {
     const msg = e instanceof AppError ? e.message : String(e);
-    const hint = e instanceof AppError && e.isSessionExpired
-      ? " Ejecuta: plaza login"
-      : "";
+    const hint = e instanceof AppError && e.isSessionExpired ? " Ejecuta: plaza login" : "";
     return errorResult(`${msg}${hint}`);
   }
 });

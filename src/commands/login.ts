@@ -1,7 +1,7 @@
 import chalk from "chalk";
-import { loginWithBrowser } from "../services/auth.js";
 import { saveConfig } from "../config.js";
 import { AppError } from "../http.js";
+import { loginWithBrowser } from "../services/auth.js";
 
 async function main() {
   const args = process.argv.slice(2);
@@ -11,7 +11,10 @@ async function main() {
   // Pega el valor de la línea "Cookie:" desde Network tab de DevTools.
   // Formato: "name1=value1; name2=value2; ..."
   if (manualIdx !== -1) {
-    const raw = args.slice(manualIdx + 1).join(" ").trim();
+    const raw = args
+      .slice(manualIdx + 1)
+      .join(" ")
+      .trim();
     if (!raw) {
       process.stderr.write(chalk.red('Uso: plaza login --manual "name1=val1; name2=val2; ..."\n'));
       process.stderr.write(chalk.dim("  Copia la línea Cookie: del Network tab de DevTools.\n"));
@@ -42,12 +45,12 @@ async function main() {
     const names = cookies.map((c) => c.name).join(", ");
     process.stderr.write(chalk.green(`✔ ${cookies.length} cookies guardadas: ${names}\n`));
 
-    const hasAuth = cookies.some((c) =>
-      ["VtexIdclientAutCookie", "vtex_session"].includes(c.name),
-    );
+    const hasAuth = cookies.some((c) => ["VtexIdclientAutCookie", "vtex_session"].includes(c.name));
     if (!hasAuth) {
       process.stderr.write(
-        chalk.yellow("⚠ No se detectó VtexIdclientAutCookie ni vtex_session. Puede que falte la cookie de login.\n"),
+        chalk.yellow(
+          "⚠ No se detectó VtexIdclientAutCookie ni vtex_session. Puede que falte la cookie de login.\n",
+        ),
       );
     }
     return;

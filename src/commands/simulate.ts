@@ -1,6 +1,6 @@
 import chalk from "chalk";
-import { simulateStock } from "../services/cart.js";
 import { AppError } from "../http.js";
+import { simulateStock } from "../services/cart.js";
 
 async function main() {
   const args = process.argv.slice(2);
@@ -23,11 +23,13 @@ async function main() {
   }
 
   try {
-    process.stderr.write(chalk.dim(`Verificando stock local para SKU ${skuId} en CP ${postalCode}...\n`));
+    process.stderr.write(
+      chalk.dim(`Verificando stock local para SKU ${skuId} en CP ${postalCode}...\n`),
+    );
     const result = await simulateStock(skuId, postalCode);
 
     if (outputJson) {
-      process.stdout.write(JSON.stringify(result, null, 2) + "\n");
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
       return;
     }
 
@@ -35,9 +37,10 @@ async function main() {
       process.stdout.write(chalk.green(`✔ Disponible para entrega en CP ${postalCode}\n`));
     } else {
       process.stdout.write(chalk.red(`✖ Sin stock para entrega en CP ${postalCode}\n`));
-      process.stdout.write(chalk.dim("  El stock global puede mostrar disponibilidad pero no hay en tu local.\n"));
+      process.stdout.write(
+        chalk.dim("  El stock global puede mostrar disponibilidad pero no hay en tu local.\n"),
+      );
     }
-
   } catch (e) {
     const msg = e instanceof AppError ? e.message : String(e);
     process.stderr.write(chalk.red(`✖ ${msg}\n`));

@@ -1,6 +1,6 @@
-import fs from "fs";
-import os from "os";
-import path from "path";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { z } from "zod";
 import { CONFIG_DIR_NAME, CONFIG_FILENAME } from "./constants.js";
 
@@ -37,7 +37,11 @@ export function getConfig(): Config {
 export function saveConfig(config: Config): void {
   if (!fs.existsSync(CONFIG_DIR)) fs.mkdirSync(CONFIG_DIR, { recursive: true });
   fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
-  try { fs.chmodSync(CONFIG_PATH, 0o600); } catch { /* Windows */ }
+  try {
+    fs.chmodSync(CONFIG_PATH, 0o600);
+  } catch {
+    /* Windows */
+  }
 }
 
 export function removeConfig(): void {
@@ -51,13 +55,13 @@ export function configExists(): boolean {
 }
 
 export function configAge(): number {
-  if (!fs.existsSync(CONFIG_PATH)) return Infinity;
+  if (!fs.existsSync(CONFIG_PATH)) return Number.POSITIVE_INFINITY;
   return Date.now() - fs.statSync(CONFIG_PATH).mtimeMs;
 }
 
 export function configAgeLabel(): string {
   const ms = configAge();
-  if (ms === Infinity) return "sin sesión";
+  if (ms === Number.POSITIVE_INFINITY) return "sin sesión";
   const min = Math.floor(ms / 60000);
   if (min < 60) return `hace ${min} min`;
   return `hace ${Math.floor(min / 60)}h ${min % 60}min`;

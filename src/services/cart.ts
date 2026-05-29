@@ -1,6 +1,6 @@
-import { ENDPOINTS, COUNTRY } from "../constants.js";
+import { COUNTRY, ENDPOINTS } from "../constants.js";
 import { http } from "../http.js";
-import { normalizeOrderForm, type CartNormalized, type OrderFormRaw } from "../schemas/cart.js";
+import { type CartNormalized, type OrderFormRaw, normalizeOrderForm } from "../schemas/cart.js";
 
 async function getOrderFormId(): Promise<string> {
   const raw = await http.get<OrderFormRaw>(ENDPOINTS.orderForm);
@@ -8,11 +8,15 @@ async function getOrderFormId(): Promise<string> {
 }
 
 export async function getCart(): Promise<CartNormalized> {
-  const raw = await http.get<unknown>(ENDPOINTS.orderForm + "?sc=1");
+  const raw = await http.get<unknown>(`${ENDPOINTS.orderForm}?sc=1`);
   return normalizeOrderForm(raw);
 }
 
-export async function addToCart(skuId: string, quantity: number, seller = "1"): Promise<CartNormalized> {
+export async function addToCart(
+  skuId: string,
+  quantity: number,
+  seller = "1",
+): Promise<CartNormalized> {
   const orderFormId = await getOrderFormId();
   const body = {
     expectedOrderFormSections: ["items", "totalizers", "clientProfileData", "shippingData"],
@@ -43,10 +47,7 @@ export async function simulateStock(
     postalCode,
     country: COUNTRY,
   };
-  const raw = await http.post<{ items: Array<{ availability: string }> }>(
-    ENDPOINTS.simulate,
-    body,
-  );
+  const raw = await http.post<{ items: Array<{ availability: string }> }>(ENDPOINTS.simulate, body);
   const availability = raw.items[0]?.availability ?? "withoutStock";
   return { available: availability === "available", postalCode };
 }
