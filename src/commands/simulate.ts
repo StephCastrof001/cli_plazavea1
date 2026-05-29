@@ -34,9 +34,13 @@ async function main() {
     }
 
     if (result.available) {
-      process.stdout.write(chalk.green(`✔ Disponible para entrega en CP ${postalCode}\n`));
+      process.stdout.write(
+        chalk.green(`✔ Disponible en tu local — CP ${postalCode} (seller: ${result.seller})\n`),
+      );
     } else {
-      process.stdout.write(chalk.red(`✖ Sin stock para entrega en CP ${postalCode}\n`));
+      process.stdout.write(
+        chalk.red(`✖ Sin stock en tu local — CP ${postalCode} (seller: ${result.seller})\n`),
+      );
       process.stdout.write(
         chalk.dim("  El stock global puede mostrar disponibilidad pero no hay en tu local.\n"),
       );

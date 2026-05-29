@@ -8,7 +8,8 @@ async function main() {
   const outputJson = args.includes("--output") && args[args.indexOf("--output") + 1] === "json";
   const qtyIdx = args.indexOf("--quantity");
   const quantity = qtyIdx !== -1 ? Number.parseInt(args[qtyIdx + 1] ?? "1") : 1;
-  const skuId = args.find((a) => !a.startsWith("--") && a !== args[args.indexOf("--quantity") + 1]);
+  const qtyValue = qtyIdx !== -1 ? args[qtyIdx + 1] : undefined;
+  const skuId = args.find((a) => !a.startsWith("--") && a !== qtyValue);
 
   if (!skuId) {
     process.stderr.write(

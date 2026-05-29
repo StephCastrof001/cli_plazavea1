@@ -154,4 +154,5 @@ Respuesta: `{ list: Order[], paging, facets, stats }`. Campos clave de cada Orde
 9. orders `totalValue` en centavos; el campo NO se llama `value`.
 10. **`simulate` con `seller: "1"` hardcodeado → VTEX 500 `code 001` (null-ref).** El seller depende de la región. Flujo correcto: `/regions?postalCode=X` → seller del local → `/simulation` con ese seller. Ver §Stock.
 11. **`/regions?country=PER&postalCode=X&sc=1`** = mapa oficial postal→seller de VTEX. La dirección guardada del usuario (orderForm `shippingData`) es la otra fuente del local. NO usar listas postales web externas.
-12. ⚠ Agregar nuevos gotchas numerados aquí — no en notas sueltas.
+12. **Cart/orderForm viven en `www.plazavea.com.pe`, NO en `tienda`.** `tienda` acepta PATCH en `/items` pero rechaza POST con 405. `www` acepta POST y PATCH. Search/catalog van a `tienda`; todo lo transaccional (orderForm, add, remove) va a `www`. Mismo patrón que OMS/orders.
+13. ⚠ Agregar nuevos gotchas numerados aquí — no en notas sueltas.

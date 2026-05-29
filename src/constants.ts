@@ -1,6 +1,6 @@
-export const BASE_URL = "https://tienda.plazavea.com.pe";
-// OMS (orders) vive en www, no en tienda. search/cart/orderForm van a tienda.
-export const OMS_BASE_URL = "https://www.plazavea.com.pe";
+export const BASE_URL = "https://tienda.plazavea.com.pe"; // search/catalog
+export const WWW_BASE_URL = "https://www.plazavea.com.pe"; // cart + OMS (transaccional)
+export const OMS_BASE_URL = WWW_BASE_URL; // alias para claridad
 export const COUNTRY = "PER";
 
 export const ENDPOINTS = {
@@ -8,10 +8,12 @@ export const ENDPOINTS = {
     `/api/catalog_system/pub/products/search/${encodeURIComponent(term)}?_from=${from}&_to=${to}`,
   orderForm: "/api/checkout/pub/orderForm",
   addItem: (orderFormId: string) => `/api/checkout/pub/orderForm/${orderFormId}/items`,
-  updateItem: (orderFormId: string) => `/api/checkout/pub/orderForm/${orderFormId}/items/update`,
+  updateItem: (orderFormId: string) => `/api/checkout/pub/orderForm/${orderFormId}/items`,
   profile: "/api/checkout/pub/profiles",
   orders: "/api/oms/user/orders",
-  simulate: "/api/checkout/pub/orderForms/simulation",
+  simulate: "/api/checkout/pub/orderForms/simulation?sc=1",
+  regions: (postalCode: string) =>
+    `/api/checkout/pub/regions?country=PER&postalCode=${encodeURIComponent(postalCode)}&sc=1`,
 };
 
 export const DEFAULT_HEADERS: Record<string, string> = {
