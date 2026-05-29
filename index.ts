@@ -10,9 +10,11 @@ const COMMANDS: Record<string, string> = {
   cart:     "src/commands/cart.ts",
   add:      "src/commands/add.ts",
   remove:   "src/commands/remove.ts",
-  simulate: "src/commands/simulate.ts",
-  orders:   "src/commands/orders.ts",
-  mcp:      "src/mcp/server.ts",
+  simulate:  "src/commands/simulate.ts",
+  orders:    "src/commands/orders.ts",
+  track:     "src/commands/track.ts",
+  analytics: "src/commands/analytics.ts",
+  mcp:       "src/mcp/server.ts",
 };
 
 const HELP = `
@@ -31,6 +33,8 @@ Comandos:
   remove <índice>                Eliminar del carrito [--dry-run]
   simulate                       Verificar stock local [--sku X --postal Y]
   orders                         Historial de pedidos [--limit N] [--output json]
+  track <sub>                    Radar de precios (add/list/check/remove/history)
+  analytics                      Gasto por período [--month YYYY-MM] [--top N]
   mcp                            Iniciar MCP server (stdio) para Claude Code
 
 Opciones globales:
