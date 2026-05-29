@@ -39,7 +39,7 @@ function buildHeaders(extra?: Record<string, string>): Headers {
 }
 
 export async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const url = `${BASE_URL}${path}`;
+  const url = path.startsWith("http") ? path : `${BASE_URL}${path}`;
   const headers = buildHeaders(options.headers as Record<string, string> | undefined);
 
   const response = await fetch(url, { ...options, headers }).catch((err: unknown) => {

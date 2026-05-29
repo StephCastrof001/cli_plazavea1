@@ -53,11 +53,27 @@ if (!file) {
   process.exit(1);
 }
 
-const bunPath = process.execPath;
 const rootDir = path.resolve(import.meta.dir ?? process.cwd());
 const filePath = path.resolve(rootDir, file);
 
-const result = spawnSync(bunPath, ["run", filePath, ...args.slice(1)], {
+// `login` usa Playwright, que cuelga bajo Bun en Windows (cliente WS/CDP no
+// completa el handshake con Chrome). Se ejecuta bajo Node + tsx.
+// El resto de comandos corren bajo Bun.
+let runner: string;
+let runnerArgs: string[];
+if (command === "login") {
+  runner = "node";
+  runnerArgs = [
+    path.resolve(rootDir, "node_modules/tsx/dist/cli.mjs"),
+    filePath,
+    ...args.slice(1),
+  ];
+} else {
+  runner = process.execPath; // bun
+  runnerArgs = ["run", filePath, ...args.slice(1)];
+}
+
+const result = spawnSync(runner, runnerArgs, {
   stdio: "inherit",
   shell: false,
 });

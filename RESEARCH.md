@@ -1,12 +1,24 @@
 # Plaza Vea (VTEX) — RESEARCH.md
 
-## Auth
+## Auth — CONFIRMADO (2026-05-29)
 
-- Cookie principal: `vtex_session`
-- Método: Playwright extrae cookies del browser real (headless: false)
-- TTL estimado: ~30 min (⚠ confirmar durante implementación — DM-004)
-- Cookies adicionales: `VtexFingerPrint`, `checkout.vtex.com`
-- Sin vtex_session: búsqueda funciona igual (endpoint público). Auth solo requerida para cart/orders/profile.
+- **Cookie de login real: `VtexIdclientAutCookie_plazavea`** (también una variante con UUID: `VtexIdclientAutCookie_<uuid>`).
+- ⚠ **`vtex_session` NO es auth** — aparece para visitantes anónimos (tracking). Detectar login SOLO por `VtexIdclientAutCookie*`. Usar vtex_session como señal de login es un bug (guarda sesión anónima → 401 en orders).
+- Método: Playwright extrae cookies del browser real (headless: false), filtradas por dominio `plazavea`.
+- TTL: por confirmar con uso real (cookie VtexId suele durar horas/días).
+- Sin login: búsqueda y orderForm (cart) responden igual (semi-públicos). **orders SÍ requiere `VtexIdclientAutCookie`.**
+
+### ⚠ CRÍTICO — Playwright NO corre bajo Bun en este entorno
+
+- `chromium.launch()` y `connectOverCDP()` bajo **Bun** cuelgan: el cliente WebSocket/CDP de Bun no completa el handshake con Chrome en Windows (timeout, ventana nunca abre).
+- **NO es antivirus** (Kaspersky desinstalado = fantasma WMI; Defender apagado).
+- **Solución:** correr el login bajo **Node + tsx**, no Bun:
+  ```
+  node node_modules/tsx/dist/cli.mjs src/commands/login.ts
+  ```
+  El resto del CLI (search/cart/orders/mcp) sigue en Bun — solo el login usa Node.
+- Playwright pineado a `1.59.1` para reusar `chromium-1217` ya en disco (evita descarga).
+- Fallback: `plaza login --manual "<header Cookie completo>"` (pegar desde Network tab de DevTools).
 
 ---
 
@@ -65,17 +77,28 @@ No modifica carrito. Respuesta ~200ms.
 
 ---
 
-## Endpoints confirmados
+## Endpoints confirmados — DOS HOSTS distintos (CONFIRMADO 2026-05-29)
 
-| Endpoint | Método | Auth | Descripción |
-|---|---|---|---|
-| `/api/catalog_system/pub/products/search/{term}?_from=0&_to=49` | GET | No | Búsqueda de productos |
-| `/api/checkout/pub/orderForm` | GET | Sí | Ver/crear carrito |
-| `/api/checkout/pub/orderForm/{id}/items` | POST | Sí | Agregar ítem |
-| `/api/checkout/pub/orderForm/{id}/items/update` | POST | Sí | Actualizar/eliminar ítem |
-| `/api/checkout/pub/profiles` | GET | Sí | Perfil del usuario |
-| `/api/oms/pvt/orders` | GET | Sí | Historial de pedidos (⚠ puede dar 403 en sesión web) |
-| `/api/checkout/pub/orderForms/simulation` | POST | ? | Verificar stock por local/postal |
+⚠ **Arquitectura de doble host:**
+- `tienda.plazavea.com.pe` → search, cart, orderForm, simulate
+- `www.plazavea.com.pe` → **OMS (orders)** — el único que vive en `www`
+
+| Host | Endpoint | Método | Auth | Descripción |
+|---|---|---|---|---|
+| tienda | `/api/catalog_system/pub/products/search/{term}?_from=0&_to=49` | GET | No | Búsqueda |
+| tienda | `/api/checkout/pub/orderForm` | GET | Semi | Ver/crear carrito |
+| tienda | `/api/checkout/pub/orderForm/{id}/items` | POST | Sí | Agregar ítem |
+| tienda | `/api/checkout/pub/orderForm/{id}/items/update` | POST | Sí | Actualizar/eliminar |
+| tienda | `/api/checkout/pub/orderForms/simulation` | POST | No | Stock por postal |
+| **www** | `/api/oms/user/orders?page=1&per_page=N` | GET | Sí | **Historial pedidos ✔ 200** |
+| ~~`/api/oms/pvt/orders`~~ | — | — | — | ❌ SIEMPRE 401 (pvt = admin/API key, no cookie) |
+
+### Schema de orders (`/api/oms/user/orders`)
+
+Respuesta: `{ list: Order[], paging, facets, stats }`. Campos clave de cada Order:
+- `orderId`, `creationDate`, `clientName`, `status`, `statusDescription`
+- **`totalValue`** (centavos → ÷100 = soles). ⚠ NO es `value`.
+- `totalItems`, `currencyCode` ("PEN"), `items` (puede ser null en lista)
 
 ---
 
@@ -86,4 +109,8 @@ No modifica carrito. Respuesta ~200ms.
 3. orderForm se crea automáticamente al hacer GET — no requiere POST de inicialización.
 4. `(x2)`, `(x3)` en nombre del producto es multiplicador VTEX (pack), no parte del nombre real — limpiar con regex.
 5. `commertialOffer.AvailableQuantity > 0 && IsAvailable` = heurística de stock global, no local.
-6. ⚠ Agregar nuevos gotchas numerados aquí durante implementación — no en notas sueltas.
+6. **OMS orders vive en `www.plazavea.com.pe`, NO en `tienda`** — usar `OMS_BASE_URL`. Mismo cookie funciona en ambos (dominio `.plazavea.com.pe`).
+7. **Cookie auth = `VtexIdclientAutCookie_plazavea`**, no `vtex_session`. vtex_session = anónimo.
+8. **Playwright cuelga bajo Bun en Windows** → login corre bajo Node+tsx. Resto en Bun.
+9. orders `totalValue` en centavos; el campo NO se llama `value`.
+10. ⚠ Agregar nuevos gotchas numerados aquí — no en notas sueltas.

@@ -1,4 +1,6 @@
 export const BASE_URL = "https://tienda.plazavea.com.pe";
+// OMS (orders) vive en www, no en tienda. search/cart/orderForm van a tienda.
+export const OMS_BASE_URL = "https://www.plazavea.com.pe";
 export const COUNTRY = "PER";
 
 export const ENDPOINTS = {
@@ -10,7 +12,7 @@ export const ENDPOINTS = {
   updateItem: (orderFormId: string) =>
     `/api/checkout/pub/orderForm/${orderFormId}/items/update`,
   profile: "/api/checkout/pub/profiles",
-  orders: "/api/oms/pvt/orders",
+  orders: "/api/oms/user/orders",
   simulate: "/api/checkout/pub/orderForms/simulation",
 };
 

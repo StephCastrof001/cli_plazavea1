@@ -34,7 +34,7 @@ async function main() {
       process.stdout.write(
         col(o.orderId, 20) +
         col(date, 14) +
-        col(`S/ ${o.value.toFixed(2)}`, 12) +
+        col(`S/ ${o.totalValue.toFixed(2)}`, 12) +
         status + "\n"
       );
     }

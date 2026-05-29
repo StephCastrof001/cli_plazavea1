@@ -5,46 +5,48 @@ import { BASE_URL } from "../constants.js";
 const LOGIN_URL = `${BASE_URL}/login`;
 const TIMEOUT_MS = 3 * 60 * 1000; // 3 minutos máximo
 
+// VTEX: SOLO VtexIdclientAutCookie = token de login real.
+// vtex_session aparece para visitantes anónimos (tracking) — NO sirve para auth.
+const AUTH_COOKIE_NAMES = ["VtexIdclientAutCookie"];
+
 export async function loginWithBrowser(): Promise<boolean> {
   const browser = await chromium.launch({
     headless: false,
-    args: [
-      "--window-size=1280,800",
-      "--disable-blink-features=AutomationControlled",
-    ],
+    args: ["--window-size=900,700", "--disable-blink-features=AutomationControlled"],
   });
 
   const context = await browser.newContext({
-    viewport: null,
+    viewport: { width: 900, height: 700 },
     userAgent:
       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
   });
 
   const page = await context.newPage();
-  await page.goto(LOGIN_URL, { waitUntil: "domcontentloaded", timeout: 15000 });
+  await page.goto(LOGIN_URL, { waitUntil: "domcontentloaded", timeout: 30000 });
   await page.bringToFront();
 
-  process.stderr.write("  Inicia sesión en el browser que se abrió...\n");
+  process.stderr.write("  Inicia sesión en la ventana del browser...\n");
 
-  // Esperar hasta que aparezca vtex_session (indica login exitoso)
   const start = Date.now();
   let success = false;
-
   while (Date.now() - start < TIMEOUT_MS) {
     const cookies = await context.cookies();
-    const hasSession = cookies.some(
-      (c) => c.name === "vtex_session" && c.domain.includes("plazavea"),
+    const hasAuth = cookies.some(
+      (c) => AUTH_COOKIE_NAMES.some((n) => c.name.startsWith(n)) && c.value.length > 0,
     );
-    if (hasSession) {
+    if (hasAuth) {
       success = true;
       break;
     }
     await new Promise((r) => setTimeout(r, 1500));
   }
 
+  const allCookies = await context.cookies();
   if (success) {
-    const cookies = await context.cookies();
-    saveConfig({ cookies, savedAt: new Date().toISOString() });
+    const plazaCookies = allCookies.filter((c) => c.domain.includes("plazavea"));
+    saveConfig({ cookies: plazaCookies, savedAt: new Date().toISOString() });
+    const names = plazaCookies.map((c) => c.name).join(", ");
+    process.stderr.write(`  Cookies capturadas: ${names}\n`);
   }
 
   await browser.close();
