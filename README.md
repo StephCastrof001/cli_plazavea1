@@ -1,0 +1,180 @@
+<p align="center">
+  <strong>plazavea-cli</strong>
+</p>
+
+<p align="center">
+  Compra en <a href="https://www.plazavea.com.pe/">Plaza Vea</a> desde la terminal, vía REST API, o como servidor MCP para Claude.<br>
+  Construido con Bun, TypeScript, Zod y Hono sobre la API headless de VTEX.
+</p>
+
+---
+
+## Qué hace
+
+- 🔍 Buscar productos con los **3 niveles de precio** de Plaza Vea (regular, oferta LED, Tarjeta OH)
+- 🛒 Gestionar el carrito (ver, agregar, eliminar)
+- 📦 Ver historial de pedidos
+- 📍 Verificar stock por local (`simulate`) — evita el bug de stock global vs local
+- 🤖 Servidor MCP con 5 tools para que Claude opere el CLI nativamente
+
+## Instalar
+
+```bash
+git clone https://github.com/StephCastrof001/cli_plazavea1.git
+cd cli_plazavea1
+bun install
+```
+
+> Requiere [Bun](https://bun.sh). Node + tsx también son necesarios **solo para el login** (ver abajo).
+
+## Login
+
+```bash
+bun run index.ts login       # Abre browser — inicia sesión con tu cuenta Plaza Vea
+```
+
+El comando abre Chrome en el login de Plaza Vea. Inicias sesión manualmente y el CLI
+captura la cookie `VtexIdclientAutCookie_plazavea` automáticamente (tu contraseña nunca
+se guarda — solo la cookie de sesión resultante).
+
+> **⚠ Nota técnica (Windows + Bun):** Playwright cuelga bajo Bun en Windows (el cliente
+> WebSocket/CDP no completa el handshake con Chrome). Por eso el comando `login` se ejecuta
+> automáticamente bajo **Node + tsx** vía el dispatcher. El resto del CLI corre bajo Bun.
+
+### Login manual (fallback)
+
+Si el browser no abre, copia el header `Cookie:` completo desde el Network tab de DevTools:
+
+```bash
+bun run index.ts login --manual "VtexIdclientAutCookie_plazavea=...; vtex_session=..."
+```
+
+## Uso CLI
+
+```bash
+# Búsqueda
+bun run index.ts search "leche gloria" --limit 10
+bun run index.ts search "arroz" --output json
+
+# Carrito
+bun run index.ts cart                          # Ver carrito
+bun run index.ts add <skuId> --quantity 2      # Agregar (--dry-run para preview)
+bun run index.ts remove <índice>               # Eliminar ítem
+
+# Stock por local (evita bug global vs local)
+bun run index.ts simulate --sku <skuId> --postal 15001
+
+# Pedidos
+bun run index.ts orders --limit 5
+
+# Sesión
+bun run index.ts whoami                         # Estado de sesión + antigüedad
+bun run index.ts logout                         # Cerrar sesión
+```
+
+## REST API
+
+```bash
+bun run server.ts    # Inicia en http://localhost:3847
+```
+
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| GET | `/search?q=<término>&limit=N` | Buscar productos |
+| GET | `/cart` | Ver carrito |
+| GET | `/orders?limit=N` | Historial de pedidos |
+| GET | `/health` | Estado del servidor |
+
+## Servidor MCP (integración con Claude)
+
+El CLI incluye un servidor MCP que expone tools para que Claude opere Plaza Vea nativamente.
+
+### Setup para Claude Code
+
+Agrega `.mcp.json` a la raíz de tu proyecto:
+
+```json
+{
+  "mcpServers": {
+    "plaza-vea": {
+      "command": "bun",
+      "args": ["run", "C:\\Users\\HP SUPPORT\\klipso_reverse\\Cli-propios\\plazavea-cli\\src\\mcp\\server.ts"]
+    }
+  }
+}
+```
+
+### Tools disponibles
+
+| Tool | Descripción |
+|------|-------------|
+| `search_products` | Buscar productos con precios (regular/LED/OH) y stock global |
+| `get_cart` | Ver contenido del carrito con totales |
+| `add_to_cart` | Agregar producto por skuId (verifica stock post-add) |
+| `remove_from_cart` | Eliminar ítem del carrito por índice |
+| `get_orders` | Historial de pedidos |
+
+## Estructura de precios (3 niveles)
+
+Plaza Vea tiene hasta 3 precios por producto — no siempre aparecen los 3:
+
+| Campo | Nombre real | Cuándo aparece |
+|-------|-------------|----------------|
+| `regular` | Precio normal sin descuento | Siempre |
+| `led` | Low Every Day — oferta base sin tarjeta | Solo con precio LED activo |
+| `oh` | Precio Tarjeta OH — descuento con tarjeta | Solo en campañas OH activas |
+
+VTEX codifica el precio OH en dos lugares según la campaña (`Teasers` o `Installments`).
+El CLI busca en ambos. Ver `RESEARCH.md` para el detalle.
+
+## Arquitectura
+
+```
+index.ts             → Dispatcher (login→Node+tsx, resto→Bun)
+server.ts            → REST API (Hono, puerto 3847)
+src/
+  constants.ts       → BASE_URL (tienda) + OMS_BASE_URL (www) + endpoints
+  http.ts            → Cliente HTTP tipado + AppError (isSessionExpired)
+  config.ts          → Config con Zod en ~/.config/plazavea/session.json
+  schemas/           → Zod: product (PriceInfo 3 niveles), cart
+  services/          → Lógica: auth (Playwright), products, cart, orders
+  commands/          → Un archivo por comando
+  mcp/server.ts      → Servidor MCP (5 tools)
+```
+
+### Doble host (importante)
+
+- `tienda.plazavea.com.pe` → search, cart, orderForm, simulate
+- `www.plazavea.com.pe` → OMS / orders (`/api/oms/user/orders`)
+
+La misma cookie funciona en ambos (dominio `.plazavea.com.pe`).
+
+## Type Safety
+
+Toda respuesta de VTEX se valida con [Zod](https://zod.dev/) antes de usarse:
+
+- **Búsqueda** → `schemas/product.ts` (normaliza el JSON caótico de VTEX a `PriceInfo`)
+- **Carrito** → `schemas/cart.ts` (centavos → soles)
+- **Errores** → `AppError` con detección de sesión expirada (401/403)
+
+## Consideraciones de seguridad
+
+> **Herramienta de uso local y personal.** Corre enteramente en tu máquina — no envía datos
+> a terceros (excepto las APIs de Plaza Vea). Trabajar con tu sesión real conlleva riesgos.
+
+- La cookie de sesión se guarda en **texto plano** en `~/.config/plazavea/session.json`
+  (con `chmod 600` en sistemas Unix). Cualquiera con acceso a tu home podría leerla.
+- Ejecuta `logout` cuando termines para limpiar la sesión.
+- El servidor REST (`server.ts`) abre en localhost sin autenticación — no lo expongas a la red.
+- Usando MCP, los datos de tus pedidos/carrito se envían como texto al modelo de Claude.
+- Proyecto **no oficial**, sin relación con Plaza Vea. Úsalo bajo tu propio riesgo.
+
+## Stack
+
+- [Bun](https://bun.sh) — Runtime principal
+- [Node](https://nodejs.org) + [tsx](https://tsx.is) — Solo para el login (Playwright)
+- [TypeScript](https://www.typescriptlang.org/) — Strict, sin `any`
+- [Zod](https://zod.dev/) — Validación de schemas
+- [Hono](https://hono.dev/) — REST API
+- [Playwright](https://playwright.dev/) — Login por browser
+- [MCP SDK](https://modelcontextprotocol.io/) — Integración con Claude (5 tools)

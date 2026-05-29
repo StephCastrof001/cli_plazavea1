@@ -3,7 +3,8 @@
 ## Qué hace este CLI
 
 Buscar productos, gestionar carrito y ver pedidos de Plaza Vea desde terminal o vía MCP.
-Target: VTEX headless (tienda.plazavea.com.pe). Auth: cookie vtex_session.
+Target: VTEX headless. **Auth: cookie `VtexIdclientAutCookie_plazavea`** (NO vtex_session, que es anónimo).
+Doble host: search/cart en `tienda.plazavea.com.pe`, orders en `www.plazavea.com.pe`.
 
 ## Flujo típico de uso
 
@@ -46,8 +47,13 @@ Cada producto tiene hasta 3 precios (no siempre aparecen los 3):
 
 ## Sesión y TTL
 
-- Sin login: solo `search` funciona (endpoint público VTEX)
-- Con login: todas las operaciones disponibles
-- TTL vtex_session: ~30 min estimado
+- Sin login: `search` y `cart` (orderForm) responden (semi-públicos)
+- Con login: `orders` y operaciones autenticadas — requiere `VtexIdclientAutCookie`
+- TTL: por confirmar (la cookie VtexId suele durar horas/días, no minutos)
 - Verificar antigüedad: `plaza whoami`
-- Si sesión expirada: `plaza login` de nuevo
+- Si sesión expirada (401/403): `plaza login` de nuevo
+
+## Nota para agentes — login bajo Node
+
+`plaza login` se ejecuta bajo Node+tsx (no Bun) porque Playwright cuelga bajo Bun en
+Windows. El dispatcher lo rutea automático — no requiere acción del agente.
