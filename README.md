@@ -11,7 +11,7 @@
 
 ## Qué hace
 
-- 🔍 Buscar productos con los **3 niveles de precio** de Plaza Vea (regular, oferta LED, Tarjeta OH)
+- 🔍 Buscar productos con los **3 niveles de precio** de Plaza Vea (regular, descuento sin tarjeta, Tarjeta OH)
 - 🛒 Gestionar el carrito (ver, agregar, eliminar)
 - 📦 Ver historial de pedidos
 - 📍 Verificar stock por local (`simulate`) — evita el bug de stock global vs local
@@ -25,7 +25,7 @@ cd cli_plazavea1
 bun install
 ```
 
-> Requiere [Bun](https://bun.sh). Node + tsx también son necesarios **solo para el login** (ver abajo).
+> Requiere [Bun](https://bun.sh) y [Node.js](https://nodejs.org).
 
 ## Login
 
@@ -34,12 +34,7 @@ bun run index.ts login       # Abre browser — inicia sesión con tu cuenta Pla
 ```
 
 El comando abre Chrome en el login de Plaza Vea. Inicias sesión manualmente y el CLI
-captura la cookie `VtexIdclientAutCookie_plazavea` automáticamente (tu contraseña nunca
-se guarda — solo la cookie de sesión resultante).
-
-> **⚠ Nota técnica (Windows + Bun):** Playwright cuelga bajo Bun en Windows (el cliente
-> WebSocket/CDP no completa el handshake con Chrome). Por eso el comando `login` se ejecuta
-> automáticamente bajo **Node + tsx** vía el dispatcher. El resto del CLI corre bajo Bun.
+captura la cookie de sesión automáticamente (tu contraseña nunca se guarda).
 
 ### Login manual (fallback)
 
@@ -98,7 +93,7 @@ Agrega `.mcp.json` a la raíz de tu proyecto:
   "mcpServers": {
     "plaza-vea": {
       "command": "bun",
-      "args": ["run", "C:\\Users\\HP SUPPORT\\klipso_reverse\\Cli-propios\\plazavea-cli\\src\\mcp\\server.ts"]
+      "args": ["run", "/path/to/plazavea-cli/src/mcp/server.ts"]
     }
   }
 }
@@ -108,7 +103,7 @@ Agrega `.mcp.json` a la raíz de tu proyecto:
 
 | Tool | Descripción |
 |------|-------------|
-| `search_products` | Buscar productos con precios (regular/LED/OH) y stock global |
+| `search_products` | Buscar productos con precios (regular/descuento/OH) y stock global |
 | `get_cart` | Ver contenido del carrito con totales |
 | `add_to_cart` | Agregar producto por skuId (verifica stock post-add) |
 | `remove_from_cart` | Eliminar ítem del carrito por índice |
@@ -121,7 +116,7 @@ Plaza Vea tiene hasta 3 precios por producto — no siempre aparecen los 3:
 | Campo | Nombre real | Cuándo aparece |
 |-------|-------------|----------------|
 | `regular` | Precio normal sin descuento | Siempre |
-| `led` | Low Every Day — oferta base sin tarjeta | Solo con precio LED activo |
+| `led` | Precio descuento sin tarjeta | Solo cuando aplica oferta base |
 | `oh` | Precio Tarjeta OH — descuento con tarjeta | Solo en campañas OH activas |
 
 VTEX codifica el precio OH en dos lugares según la campaña (`Teasers` o `Installments`).
@@ -171,8 +166,7 @@ Toda respuesta de VTEX se valida con [Zod](https://zod.dev/) antes de usarse:
 
 ## Stack
 
-- [Bun](https://bun.sh) — Runtime principal
-- [Node](https://nodejs.org) + [tsx](https://tsx.is) — Solo para el login (Playwright)
+- [Bun](https://bun.sh) — Runtime
 - [TypeScript](https://www.typescriptlang.org/) — Strict, sin `any`
 - [Zod](https://zod.dev/) — Validación de schemas
 - [Hono](https://hono.dev/) — REST API
