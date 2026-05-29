@@ -2,9 +2,20 @@
 
 ## Qué hace este CLI
 
-Buscar productos, gestionar carrito y ver pedidos de Plaza Vea desde terminal o vía MCP.
+Crea el canal programático y conversacional que Plaza Vea no tiene — permite que Claude opere
+las compras sin que el usuario abra el browser, y expone el historial de gasto que la app no analiza.
+
+**AHA moment:** `search → simulate → add → cart` completo vía Claude, sin browser.
+Ver `docs/problem-statement.md` para el contexto completo.
+
 Target: VTEX headless. **Auth: cookie `VtexIdclientAutCookie_plazavea`** (NO vtex_session, que es anónimo).
 Doble host: search/cart en `tienda.plazavea.com.pe`, orders en `www.plazavea.com.pe`.
+
+## Carrito y sesión
+
+El orderForm VTEX está asociado a la **cuenta**, no al browser. Lo que Claude agrega aparece
+en la app del usuario, y lo que el usuario tiene en su carrito Claude lo ve con `get_cart`.
+Canal bidireccional real entre CLI/MCP y la app móvil.
 
 ## Flujo típico de uso
 

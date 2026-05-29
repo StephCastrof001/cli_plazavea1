@@ -1,6 +1,9 @@
 # plazavea-cli — CLAUDE.md
 
-CLI para Plaza Vea (VTEX headless) con MCP server para Claude Code.
+CLI + MCP para Plaza Vea (VTEX headless). Canal programático y conversacional que la app no ofrece.
+
+**AHA moment:** Claude completa `search → simulate (stock local) → add → cart` sin que el usuario abra el browser.
+Ver `docs/problem-statement.md` para contexto completo.
 
 ## Stack
 

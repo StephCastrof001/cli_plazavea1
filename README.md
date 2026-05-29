@@ -3,19 +3,32 @@
 </p>
 
 <p align="center">
-  Compra en <a href="https://www.plazavea.com.pe/">Plaza Vea</a> desde la terminal, vía REST API, o como servidor MCP para Claude.<br>
-  Construido con Bun, TypeScript, Zod y Hono sobre la API headless de VTEX.
+  El canal programático y conversacional que Plaza Vea no tiene.<br>
+  Claude busca, verifica stock en tu local y agrega al carrito — sin que abras el browser.
 </p>
 
 ---
 
+## Por qué existe
+
+La app de Plaza Vea muestra tus órdenes pero no las suma, no las analiza, y no hay forma de que un agente AI opere tus compras. Este CLI crea ese canal.
+
+**AHA moment:**
+```bash
+# Todo esto sin abrir el browser:
+plaza search "arroz costeño" --output json   # buscar con precios reales
+plaza simulate --sku X --postal 15001         # verificar stock en tu local
+plaza add X                                   # agregar al carrito
+plaza cart                                    # confirmar
+```
+
 ## Qué hace
 
-- 🔍 Buscar productos con los **3 niveles de precio** de Plaza Vea (regular, descuento sin tarjeta, Tarjeta OH)
-- 🛒 Gestionar el carrito (ver, agregar, eliminar)
-- 📦 Ver historial de pedidos
-- 📍 Verificar stock por local (`simulate`) — evita el bug de stock global vs local
-- 🤖 Servidor MCP con 5 tools para que Claude opere el CLI nativamente
+- 🤖 **MCP server** — Claude opera tus compras en Plaza Vea nativamente (5 tools)
+- 📍 **Verificar stock local** (`simulate`) — distingue stock global de stock en tu tienda
+- 🔍 Buscar con los **3 niveles de precio** (regular, descuento sin tarjeta, Tarjeta OH)
+- 🛒 Gestionar carrito desde terminal (lo que Claude agrega se ve en la app y viceversa)
+- 📦 Historial de pedidos que la app no analiza
 
 ## Instalar
 
