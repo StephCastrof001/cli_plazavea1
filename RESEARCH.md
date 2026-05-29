@@ -57,23 +57,62 @@ v3 busca en ambos → usa el primero que encuentre.
 
 ---
 
-## Stock — Bug conocido (reportado por usuario)
+## Stock — Bug conocido (reportado por usuario) + incidencia simulate (CONFIRMADO 2026-05-29)
 
-**Problema:** search API devuelve stock GLOBAL (suma de todos los locales del país).
-Al hacer checkout, VTEX verifica stock del local asignado a la dirección de envío → puede estar agotado aunque global diga disponible.
+### El problema de negocio (por qué existe `simulate`)
 
-**Solución v3 (3 capas):**
-- A: columna Stock en `search` muestra `⚠ global`
-- B: `add` verifica `availability` en respuesta del cart → warning si `withoutStock`
-- C: comando `simulate --sku X --postal Y` llama simulation API antes de agregar
+`search` API devuelve **stock GLOBAL** del catálogo (seller por defecto `"1"`).
+Al hacer checkout, VTEX verifica el stock del **local físico** asignado a tu dirección de envío.
+Resultado: `search` dice "disponible ✅" pero el checkout en tu local falla → **pedido cae al final del flujo.**
+
+> **Lo que queremos evitar:** que el usuario (o Claude) arme el carrito, llegue al checkout, y recién ahí descubra que no hay stock en su local. `simulate` mueve esa verificación al **inicio**, antes de agregar.
+
+### Modelo mental correcto: 1 producto × N sellers (locales) = N stocks
+
+El error de v3 fue asumir "1 producto = 1 stock". La realidad VTEX:
+
+```
+Cada zona de Lima la atiende un SELLER distinto (= tienda/almacén físico):
+   Rímac (postal 15094)  →  seller "plazaveamko522"
+   catálogo / global     →  seller "1"
+```
+
+`search`/`cart` usan el catálogo global (seller "1") → por eso funcionan.
+`simulate` necesita el **seller del local específico** → por eso fallaba con seller "1" hardcodeado.
+
+### Incidencia: simulate tiraba VTEX 500 (`code 001` Object reference not set)
+
+**Causa raíz:** `simulateStock()` mandaba `seller: "1"` fijo. Para postal 15094 (Rímac) el seller real es `plazaveamko522`. Pedir simulación del seller "1" en una región que no atiende → null-ref server-side. **Fallaba con cualquier postal y cualquier variante de payload** (probado: con/sin `sc=1`, `geoCoordinates`, `salesChannel`, sin seller).
+
+### La "lista de VTEX" — endpoint `/regions` (fuente de verdad postal→seller)
+
+NO adivinar el postal de listas web (codigo-postal.co). VTEX tiene su propio mapa:
+
+```
+GET /api/checkout/pub/regions?country=PER&postalCode=15094&sc=1
+→ { value: [{ id: "U1cjcGxhemF2ZWFta281MjI=",   ← regionId
+              sellers: [{ id: "plazaveamko522" }] }] }   ← seller del local
+```
+
+### Flujo correcto de capa C (fix de simulate — 2 pasos)
+
+```
+PASO 1: postal ──/regions──▶ regionId + seller del local
+PASO 2: simulation(sku, seller correcto / regionId) ──▶ stock REAL del local
+```
 
 **Endpoint simulation:**
 ```
-POST /api/checkout/pub/orderForms/simulation
-Body: { items: [{id, quantity, seller}], postalCode: "15001", country: "PER" }
+POST /api/checkout/pub/orderForms/simulation?sc=1
+Body: { items: [{id, quantity, seller: "<seller del local>"}], postalCode, country: "PER" }
 ```
-No modifica carrito. Respuesta ~200ms.
-⚠ Auth requerida: sin confirmar — verificar durante implementación.
+No modifica carrito. **Auth NO requerida** (semi-público, igual que search/cart).
+⚠ El `seller` DEBE venir de `/regions`, no hardcodeado. Ese es el fix pendiente de `simulateStock()`.
+
+**Solución v3 (3 capas) — estado real:**
+- A: columna Stock en `search` muestra `⚠ global` ✅
+- B: `add` verifica `availability` en respuesta del cart → warning si `withoutStock` ✅
+- C: `simulate` — ⚠ **roto por seller hardcodeado**. Fix = anteponer `/regions` lookup (ver arriba).
 
 ---
 
@@ -105,7 +144,7 @@ Respuesta: `{ list: Order[], paging, facets, stats }`. Campos clave de cada Orde
 ## Gotchas
 
 1. `commertialOffer.Price` ya viene en soles (ej: 15.90). Verificar si orderForm usa centavos (1590 → S/ 15.90) — normalizar en schema.
-2. Seller `"1"` = Plaza Vea directo. Otros sellers = terceros en marketplace — filtrar por seller "1" para precio oficial.
+2. Seller `"1"` = catálogo global / Plaza Vea directo — sirve para `search`/`cart` (precio oficial). ⚠ PERO para stock por local, cada región tiene su PROPIO seller (ej. Rímac = `plazaveamko522`). Obtenerlo de `/regions`, no asumir "1".
 3. orderForm se crea automáticamente al hacer GET — no requiere POST de inicialización.
 4. `(x2)`, `(x3)` en nombre del producto es multiplicador VTEX (pack), no parte del nombre real — limpiar con regex.
 5. `commertialOffer.AvailableQuantity > 0 && IsAvailable` = heurística de stock global, no local.
@@ -113,4 +152,6 @@ Respuesta: `{ list: Order[], paging, facets, stats }`. Campos clave de cada Orde
 7. **Cookie auth = `VtexIdclientAutCookie_plazavea`**, no `vtex_session`. vtex_session = anónimo.
 8. **Playwright cuelga bajo Bun en Windows** → login corre bajo Node+tsx. Resto en Bun.
 9. orders `totalValue` en centavos; el campo NO se llama `value`.
-10. ⚠ Agregar nuevos gotchas numerados aquí — no en notas sueltas.
+10. **`simulate` con `seller: "1"` hardcodeado → VTEX 500 `code 001` (null-ref).** El seller depende de la región. Flujo correcto: `/regions?postalCode=X` → seller del local → `/simulation` con ese seller. Ver §Stock.
+11. **`/regions?country=PER&postalCode=X&sc=1`** = mapa oficial postal→seller de VTEX. La dirección guardada del usuario (orderForm `shippingData`) es la otra fuente del local. NO usar listas postales web externas.
+12. ⚠ Agregar nuevos gotchas numerados aquí — no en notas sueltas.
