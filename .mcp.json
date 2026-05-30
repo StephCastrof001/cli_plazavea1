@@ -1,10 +1,10 @@
 {
   "mcpServers": {
     "plaza-vea": {
-      "command": "bun",
+      "command": "C:/Users/HP SUPPORT/.bun/bin/bun.exe",
       "args": [
         "run",
-        "C:\\Users\\HP SUPPORT\\klipso_reverse\\Cli-propios\\plazavea-cli\\src\\mcp\\server.ts"
+        "C:/Users/HP SUPPORT/klipso_reverse/Cli-propios/plazavea-cli/src/mcp/server.ts"
       ]
     }
   }
