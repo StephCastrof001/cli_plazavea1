@@ -34,28 +34,82 @@ export async function removeFromCart(itemIndex: number): Promise<CartNormalized>
   return normalizeOrderForm(raw);
 }
 
-type RegionItem = { id: string; sellers: Array<{ id: string }> };
+export interface SavedAddress {
+  addressId: string;
+  addressType: string;
+  receiverName: string;
+  neighborhood: string;
+  street: string;
+  number: string;
+  city: string;
+  postalCode: string;
+}
 
-async function getLocalSeller(postalCode: string): Promise<{ seller: string; regionId: string }> {
-  const raw = await http.get<RegionItem[]>(ENDPOINTS.regions(postalCode));
-  const region = Array.isArray(raw) ? raw[0] : undefined;
-  if (!region?.id) throw new Error(`No hay local de Plaza Vea para el código postal ${postalCode}`);
-  const seller = region.sellers[0]?.id ?? "1";
-  return { seller, regionId: region.id };
+interface OrderFormWithShipping {
+  orderFormId: string;
+  items: Array<{ id: string }>;
+  shippingData?: {
+    availableAddresses?: SavedAddress[];
+    logisticsInfo?: Array<{
+      itemId: string;
+      selectedSla: string;
+      slas: Array<{ id: string; shippingEstimate: string; polygonName?: string }>;
+    }>;
+  };
+}
+
+export async function getAddresses(): Promise<SavedAddress[]> {
+  const raw = await http.get<OrderFormWithShipping>(`${WWW_BASE_URL}${ENDPOINTS.orderForm}`);
+  return raw.shippingData?.availableAddresses ?? [];
 }
 
 export async function simulateStock(
   skuId: string,
-  postalCode: string,
-  quantity = 1,
-): Promise<{ available: boolean; postalCode: string; seller: string }> {
-  const { seller } = await getLocalSeller(postalCode);
-  const body = {
-    items: [{ id: skuId, quantity, seller }],
-    postalCode,
-    country: COUNTRY,
+  addressIndex = 0,
+): Promise<{
+  available: boolean;
+  slaName: string | null;
+  shippingEstimate: string | null;
+  polygon: string | null;
+  address: SavedAddress | null;
+}> {
+  const raw = await http.get<OrderFormWithShipping>(`${WWW_BASE_URL}${ENDPOINTS.orderForm}`);
+  const addresses = raw.shippingData?.availableAddresses ?? [];
+  const address = addresses[addressIndex] ?? null;
+
+  if (!address)
+    throw new Error(
+      "No hay direcciones guardadas en tu cuenta Plaza Vea. Guarda una dirección en la app o web primero.",
+    );
+
+  // Patrón antigravity: attachShipping con la dirección elegida
+  const itemCount = Math.max(raw.items?.length ?? 0, 1);
+  const attachBody = {
+    address,
+    logisticsInfo: Array.from({ length: itemCount }, (_, i) => ({
+      itemIndex: i,
+      selectedSla: "Despacho a Domicilio",
+      selectedDeliveryChannel: "delivery",
+    })),
   };
-  const raw = await http.post<{ items: Array<{ availability: string }> }>(ENDPOINTS.simulate, body);
-  const availability = raw.items[0]?.availability ?? "withoutStock";
-  return { available: availability === "available", postalCode, seller };
+
+  const attached = await http.post<OrderFormWithShipping>(
+    `${WWW_BASE_URL}/api/checkout/pub/orderForm/${raw.orderFormId}/attachments/shippingData`,
+    attachBody,
+  );
+
+  const logisticsForSku = attached.shippingData?.logisticsInfo?.find((li) => li.itemId === skuId);
+
+  if (!logisticsForSku || logisticsForSku.slas.length === 0) {
+    return { available: false, slaName: null, shippingEstimate: null, polygon: null, address };
+  }
+
+  const sla = logisticsForSku.slas[0];
+  return {
+    available: true,
+    slaName: sla.id,
+    shippingEstimate: sla.shippingEstimate,
+    polygon: sla.polygonName ?? null,
+    address,
+  };
 }
