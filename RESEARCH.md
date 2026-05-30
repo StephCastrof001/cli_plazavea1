@@ -80,39 +80,38 @@ Cada zona de Lima la atiende un SELLER distinto (= tienda/almacén físico):
 `search`/`cart` usan el catálogo global (seller "1") → por eso funcionan.
 `simulate` necesita el **seller del local específico** → por eso fallaba con seller "1" hardcodeado.
 
-### Incidencia: simulate tiraba VTEX 500 (`code 001` Object reference not set)
+### Incidencia inicial: simulate tiraba VTEX 500
 
-**Causa raíz:** `simulateStock()` mandaba `seller: "1"` fijo. Para postal 15094 (Rímac) el seller real es `plazaveamko522`. Pedir simulación del seller "1" en una región que no atiende → null-ref server-side. **Fallaba con cualquier postal y cualquier variante de payload** (probado: con/sin `sc=1`, `geoCoordinates`, `salesChannel`, sin seller).
+**Causa raíz v1 del bug:** `simulateStock()` llamaba al endpoint público `/orderForms/simulation` con `seller: "1"` hardcodeado. Ese endpoint da 500 para cualquier payload — callejón sin salida.
 
-### La "lista de VTEX" — endpoint `/regions` (fuente de verdad postal→seller)
+**Causa raíz real (descubierta por auditoría de antigravity v2):** el endpoint `/simulation` no era el camino correcto. antigravity nunca lo usó. El stock local sale del **orderForm con dirección adjunta**, no de un endpoint de simulación suelto.
 
-NO adivinar el postal de listas web (codigo-postal.co). VTEX tiene su propio mapa:
-
-```
-GET /api/checkout/pub/regions?country=PER&postalCode=15094&sc=1
-→ { value: [{ id: "U1cjcGxhemF2ZWFta281MjI=",   ← regionId
-              sellers: [{ id: "plazaveamko522" }] }] }   ← seller del local
-```
-
-### Flujo correcto de capa C (fix de simulate — 2 pasos)
+### Solución real — patrón attachShipping (CONFIRMADO 2026-05-30)
 
 ```
-PASO 1: postal ──/regions──▶ regionId + seller del local
-PASO 2: simulation(sku, seller correcto / regionId) ──▶ stock REAL del local
+PASO 1: GET /api/checkout/pub/orderForm
+        → leer shippingData.availableAddresses (las direcciones guardadas del usuario)
+
+PASO 2: POST /api/checkout/pub/orderForm/{id}/attachments/shippingData
+        Body: { address: <dirección elegida>, logisticsInfo: [{itemIndex, selectedSla, selectedDeliveryChannel}] }
+
+PASO 3: leer response.shippingData.logisticsInfo[n].slas
+        → slas.length > 0  = disponible en ese local
+        → slas[0].shippingEstimate = cuándo llega ("0d" = hoy)
+        → slas[0].polygonName = almacén físico asignado (ej. "Lima-Rimac-DD-125")
 ```
 
-**Endpoint simulation:**
-```
-POST /api/checkout/pub/orderForms/simulation?sc=1
-Body: { items: [{id, quantity, seller: "<seller del local>"}], postalCode, country: "PER" }
-```
-No modifica carrito. **Auth NO requerida** (semi-público, igual que search/cart).
-⚠ El `seller` DEBE venir de `/regions`, no hardcodeado. Ese es el fix pendiente de `simulateStock()`.
+**Dirección default:** `availableAddresses[0]` (la primera guardada).
+Para cambiar la dirección: ir a plazavea.com.pe → agregar/gestionar direcciones. El CLI las lee automáticamente.
 
-**Solución v3 (3 capas) — estado real:**
+**Smoke test real (2026-05-30):**
+- Rímac `[1]` → almacén `Lima-Rimac-DD-125`, entrega hoy
+- Comas `[0]` → almacén `Lima-Comas-DD-114`, entrega hoy
+
+**Solución v3 (3 capas) — estado FINAL:**
 - A: columna Stock en `search` muestra `⚠ global` ✅
 - B: `add` verifica `availability` en respuesta del cart → warning si `withoutStock` ✅
-- C: `simulate` — ⚠ **roto por seller hardcodeado**. Fix = anteponer `/regions` lookup (ver arriba).
+- C: `simulate --sku X [--address N]` → usa `attachShipping` con dirección guardada → stock local real ✅
 
 ---
 
