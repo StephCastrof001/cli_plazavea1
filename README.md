@@ -1,10 +1,15 @@
 <p align="center">
-  <strong>plazavea-cli</strong>
+  <strong>plazavea-cli</strong> — Servidor MCP para retail VTEX
 </p>
 
 <p align="center">
-  El canal programático y conversacional que Plaza Vea no tiene.<br>
-  Claude busca, verifica stock en tu local y agrega al carrito — sin que abras el browser.
+  Opera tus compras de supermercado desde Claude Code o Cursor.<br>
+  Claude busca, verifica stock en TU local y agrega al carrito — sin que abras el browser.<br>
+  <sub>Primera implementación: Plaza Vea (Perú). Arquitectura VTEX → portable a Wong, Tottus, Vivanda.</sub>
+</p>
+
+<p align="center">
+  <code>mcp</code> · <code>claude-code</code> · <code>cursor</code> · <code>vtex</code> · <code>retail</code>
 </p>
 
 ---
