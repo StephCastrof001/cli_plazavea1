@@ -37,7 +37,7 @@ Todos los comandos aceptan `--output json`:
 plaza search "arroz" --output json | jq '.[].prices'
 ```
 
-## MCP tools disponibles
+## MCP tools disponibles (9 tools — v3.1.0)
 
 | Tool | Input | Output |
 |---|---|---|
@@ -46,6 +46,10 @@ plaza search "arroz" --output json | jq '.[].prices'
 | `add_to_cart` | `skuId: string, quantity?: number` | `CartNormalized` |
 | `remove_from_cart` | `index: number` | `CartNormalized` |
 | `get_orders` | `limit?: number` | `Order[]` |
+| `get_analytics` | `month?: string, topN?: number, limit?: number` | `AnalyticsResult` (gasto, top SKUs) |
+| `track_add` | `productId: string, alertPrice?: number` | `TrackedProduct` |
+| `track_list` | — | `TrackedProduct[]` |
+| `track_check` | — | `{ changes, alerts }` |
 
 ## Precios — estructura
 

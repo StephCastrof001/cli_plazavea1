@@ -112,7 +112,7 @@ Agrega `.mcp.json` a la raíz de tu proyecto:
 }
 ```
 
-### Tools disponibles
+### Tools disponibles (9)
 
 | Tool | Descripción |
 |------|-------------|
@@ -121,6 +121,10 @@ Agrega `.mcp.json` a la raíz de tu proyecto:
 | `add_to_cart` | Agregar producto por skuId (verifica stock post-add) |
 | `remove_from_cart` | Eliminar ítem del carrito por índice |
 | `get_orders` | Historial de pedidos |
+| `get_analytics` | Gasto total, por mes y top productos. Primera llamada lenta, usa cache después |
+| `track_add` | Agregar producto al radar de precios (con alerta opcional) |
+| `track_list` | Ver productos rastreados con precio actual |
+| `track_check` | Refrescar precios y ver alertas activas |
 
 ## Estructura de precios (3 niveles)
 
