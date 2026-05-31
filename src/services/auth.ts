@@ -1,6 +1,8 @@
 import { chromium } from "playwright";
-import { removeConfig, saveConfig } from "../config.js";
+import { configExists, getConfig, removeConfig, saveConfig } from "../config.js";
 import { BASE_URL } from "../constants.js";
+
+const CHECKOUT_URL = `${BASE_URL}/checkout/#/cart`;
 
 const LOGIN_URL = `${BASE_URL}/login`;
 const TIMEOUT_MS = 3 * 60 * 1000; // 3 minutos máximo
@@ -70,6 +72,45 @@ export async function loginWithBrowser(): Promise<boolean> {
 
   await browser.close();
   return success;
+}
+
+export async function openCheckoutInBrowser(): Promise<void> {
+  if (!configExists()) throw new Error("No hay sesión activa. Ejecuta: plaza login");
+
+  const config = getConfig();
+
+  const browser = await chromium.launch({
+    headless: false,
+    args: ["--window-size=900,700", "--disable-blink-features=AutomationControlled"],
+  });
+
+  const context = await browser.newContext({
+    viewport: null, // maximized — user takes full control
+    userAgent:
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+  });
+
+  await context.addCookies(
+    config.cookies.map((c) => {
+      const rawDomain = c.domain ?? "plazavea.com.pe";
+      return {
+        name: c.name,
+        value: c.value,
+        domain: rawDomain.startsWith(".") ? rawDomain : `.${rawDomain}`,
+        path: c.path ?? "/",
+        secure: c.secure ?? false,
+        httpOnly: c.httpOnly ?? false,
+        sameSite: "Lax" as const,
+      };
+    }),
+  );
+
+  const page = await context.newPage();
+  await page.goto(CHECKOUT_URL, { waitUntil: "domcontentloaded", timeout: 30000 });
+  await page.bringToFront();
+
+  process.stderr.write("  Browser listo. Completa el pago en la ventana del browser.\n");
+  // No browser.close() — el usuario toma control del browser
 }
 
 export function logout(): void {

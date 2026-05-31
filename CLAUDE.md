@@ -12,7 +12,7 @@ Ver `docs/problem-statement.md` para contexto completo.
 - Validación: **Zod v4**
 - Linter: **Biome** (`biome check src/`)
 - UI: bloques cligentic en `src/cli/`
-- MCP: `src/mcp/server.ts` — 11 tools (v3.1.0)
+- MCP: `src/mcp/server.ts` — 12 tools (v3.2.0)
 
 ## 🛑 GUARDRAIL DE SEGURIDAD — frontera Humano/IA (INVIOLABLE)
 
@@ -35,7 +35,7 @@ Ver `docs/problem-statement.md` para contexto completo.
   1. `select_address` → clavado del polígono logístico (OBLIGATORIO antes de buscar)
   2. `search_products` → tabla de 4 columnas (ver formato abajo)
   3. `add_to_cart` → agregar productos
-  4. `get_checkout_url` → entregar Magic Link al usuario para pagar
+  4. `open_checkout` → retorna comando PowerShell para que el usuario abra el browser
 - **Formato de búsqueda — SIEMPRE tabla de 4 columnas:**
   ```
   | Producto | Precio Lista | Precio Online | Precio Tarjeta OH! |
@@ -43,14 +43,14 @@ Ver `docs/problem-statement.md` para contexto completo.
   | Arroz COSTEÑO 5kg | S/ 25.90 | S/ 21.90 | S/ 18.90 |
   ```
   Usar `-` si un precio no aplica. NUNCA usar la palabra "LED" — el término correcto es "Precio Online".
-- **Magic Checkout Link — al finalizar compra:** Llamar `get_checkout_url` y mostrar el link al usuario. NUNCA intentar completar el pago tú mismo.
+- **Checkout Handoff — al finalizar compra:** Llamar `open_checkout`. La tool retorna el comando exacto. Mostrarlo al usuario para que lo pegue en su PowerShell. NUNCA intentar ejecutar el pago tú mismo.
 
 ## Reglas arquitectónicas
 
 1. Toda data de VTEX pasa por schema Zod en `src/schemas/` antes de usarse
 2. Todo tráfico HTTP pasa por `src/http.ts` — sin fetch directo en services o commands
 3. `stdout` = datos finales (JSON o tabla). `stderr` = spinners, logs, errores
-4. Playwright solo en `src/services/auth.ts` para extraer cookies
+4. Playwright solo en `src/services/auth.ts` (login) y `src/scripts/handoff.ts` (checkout) — siempre bajo Node+tsx, nunca Bun (ADR-0001)
 5. Comandos mutantes (`add`, `remove`) siempre tienen `--dry-run`
 
 ## Dispatcher
@@ -69,3 +69,81 @@ Si encuentras algo nuevo (endpoint, gotcha, comportamiento inesperado de VTEX):
 1. Agregar gotcha numerado en `RESEARCH.md`
 2. Actualizar DM correspondiente en el plan
 3. No cambiar arquitectura sin documentar razón
+
+---
+
+## Mapa Arquitectónico — AS-IS / TO-BE
+
+### Matriz de Equivalencias del Flujo de Compra
+
+| Fase | AS-IS (PlazaVea.com Web) | TO-BE (CLI `plaza`) | TO-BE (MCP / Claude) | Auth Gate |
+|---|---|---|---|---|
+| **0. Auth** | Login manual SMS en la web | `plaza login` → Playwright headed (Node+tsx) | Tool `login` → retorna comando PowerShell | `requireSession()` — verifica `VtexIdclientAutCookie` en config |
+| **1. Fulfillment** | Popup "Elige dirección" | `plaza select-address N` | Tool `select_address` | `requireAddress()` — bloqueo fuerte, sin dirección no hay stock real |
+| **2. Búsqueda** | Barra de búsqueda web | `plaza search <query>` | Tool `search_products` | `requireSession()` + `requireAddress()` |
+| **3. Carrito** | Botones "Agregar" + minicarrito | `plaza add` / `plaza remove` / `plaza cart` | Tools `add_to_cart` / `remove_from_cart` / `get_cart` | `requireSession()` — modifica `orderForm` VTEX |
+| **4. Checkout** | Redirect `/checkout/#/cart` + pago manual | `plaza checkout` → Playwright headed (Node+tsx) | Tool `open_checkout` → retorna comando PowerShell | `requireSession()` + `requireAddress()` |
+| **5. Post-venta** | "Mis Pedidos" web | `plaza orders` | Tool `get_orders` | `requireSession()` — solo lectura |
+
+### Diagrama de Flujo
+
+```mermaid
+graph TD
+    subgraph AS_IS ["AS-IS: PlazaVea.com (Humano)"]
+        W1[Login SMS Web] --> W2[Popup: Elegir Dirección]
+        W2 --> W3[Buscar Producto]
+        W3 --> W4[Añadir a Carrito]
+        W4 --> W5[Ir a /checkout y Pagar]
+    end
+
+    subgraph TO_BE_CLI ["TO-BE: CLI (Modo Terminal)"]
+        C1[plaza login\nPlaywright Node+tsx] --> C2[plaza select-address N]
+        C2 --> C3[plaza search]
+        C3 --> C4[plaza add]
+        C4 --> C5[plaza checkout\nPlaywright Node+tsx]
+    end
+
+    subgraph TO_BE_MCP ["TO-BE: MCP (Modo Agente AI)"]
+        M1[Tool: login\nRetorna comando PS] --> M2[Tool: select_address]
+        M2 --> M3[Tool: search_products]
+        M3 --> M4[Tool: add_to_cart]
+        M4 --> M5[Tool: open_checkout\nRetorna comando PS]
+    end
+
+    W1 -.-> C1 -.-> M1
+    W2 -.-> C2 -.-> M2
+    W3 -.-> C3 -.-> M3
+    W4 -.-> C4 -.-> M4
+    W5 -.-> C5 -.-> M5
+
+    classDef auth fill:#f9d0c4,stroke:#333,stroke-width:2px;
+    classDef fulfillment fill:#fff4c2,stroke:#333,stroke-width:2px;
+    classDef handoff fill:#c2e0ff,stroke:#333,stroke-width:2px;
+    class W1,C1,M1 auth;
+    class W2,C2,M2 fulfillment;
+    class W5,C5,M5 handoff;
+```
+
+### Browser Handoff Instruction Pattern (ADR-0001)
+
+Playwright cuelga bajo Bun en Windows — el MCP server no puede lanzar GUI directamente.
+Los Pasos 0 y 4 del MCP retornan una instrucción de texto en vez de abrir el browser:
+
+| Paso | Tool MCP | Comando que retorna |
+|---|---|---|
+| 0. Auth | `login` *(pendiente)* | `node node_modules/tsx/dist/cli.mjs src/commands/login.ts` |
+| 4. Checkout | `open_checkout` | `node node_modules/tsx/dist/cli.mjs src/scripts/handoff.ts` |
+
+El usuario ejecuta ese comando en su PowerShell (sesión de escritorio completa).
+Node+tsx completa el handshake CDP de Playwright sin timeout.
+
+### Auth Gate — implementación actual
+
+```
+requireSession()  → src/config.ts:83  — lanza Error si !configExists()
+requireAddress()  → src/config.ts:87  — lanza Error si selectedAddressIndex === undefined
+```
+
+Aplicado en:
+- MCP: todas las tools que tocan VTEX API (11 de 12)
+- CLI: `buy`, `add`, `simulate`, `cart` — al inicio de `main()`, antes del try-catch

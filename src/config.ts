@@ -77,3 +77,14 @@ export function configAgeLabel(): string {
   if (min < 60) return `hace ${min} min`;
   return `hace ${Math.floor(min / 60)}h ${min % 60}min`;
 }
+
+export function requireSession(): void {
+  if (!configExists()) throw new Error("Sin sesión activa. Ejecuta: plaza login");
+}
+
+export function requireAddress(): void {
+  if (getSelectedAddressIndex() === undefined)
+    throw new Error(
+      "Sin dirección seleccionada. Llama select_address primero o ejecuta: plaza select-address N",
+    );
+}

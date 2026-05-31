@@ -1,4 +1,5 @@
 import chalk from "chalk";
+import { requireSession } from "../config.js";
 import { AppError } from "../http.js";
 import { getAddresses, simulateStock } from "../services/cart.js";
 
@@ -7,6 +8,8 @@ async function main() {
   const outputJson = args.includes("--output") && args[args.indexOf("--output") + 1] === "json";
   const skuIdx = args.indexOf("--sku");
   const addrIdx = args.indexOf("--address");
+
+  requireSession();
 
   if (skuIdx === -1) {
     process.stderr.write(chalk.red("Uso: plaza simulate --sku <skuId> [--address <índice>]\n"));
@@ -68,7 +71,7 @@ async function main() {
       );
     }
   } catch (e) {
-    const msg = e instanceof AppError ? e.message : String(e);
+    const msg = e instanceof AppError ? e.message : e instanceof Error ? e.message : String(e);
     process.stderr.write(chalk.red(`✖ ${msg}\n`));
     if (e instanceof AppError && e.isSessionExpired) {
       process.stderr.write(chalk.dim("  Ejecuta: plaza login\n"));

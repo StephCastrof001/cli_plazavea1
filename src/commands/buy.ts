@@ -4,6 +4,7 @@
  */
 import { createInterface } from "node:readline";
 import chalk from "chalk";
+import { requireSession } from "../config.js";
 import { AppError } from "../http.js";
 import { addToCart } from "../services/cart.js";
 import { searchProducts } from "../services/products.js";
@@ -36,6 +37,8 @@ async function main() {
     process.stderr.write(chalk.dim("  Ejemplo: plaza buy arroz costeño\n"));
     process.exit(1);
   }
+
+  requireSession();
 
   try {
     process.stderr.write(chalk.dim(`Buscando "${term}"...\n`));
@@ -107,7 +110,7 @@ async function main() {
       chalk.dim(`  Carrito: ${cart.items.length} ítems — S/${cart.totalValue.toFixed(2)} total\n`),
     );
   } catch (e) {
-    const msg = e instanceof AppError ? e.message : String(e);
+    const msg = e instanceof AppError ? e.message : e instanceof Error ? e.message : String(e);
     process.stderr.write(chalk.red(`✖ ${msg}\n`));
     if (e instanceof AppError && e.isSessionExpired) {
       process.stderr.write(chalk.dim("  Ejecuta: plaza login\n"));

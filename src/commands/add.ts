@@ -1,4 +1,5 @@
 import chalk from "chalk";
+import { requireSession } from "../config.js";
 import { AppError } from "../http.js";
 import { addToCart } from "../services/cart.js";
 
@@ -25,6 +26,8 @@ async function main() {
     );
     return;
   }
+
+  requireSession();
 
   try {
     process.stderr.write(chalk.dim(`Agregando SKU ${skuId} x${quantity}...\n`));
@@ -53,7 +56,7 @@ async function main() {
       process.stdout.write(`${JSON.stringify(cart, null, 2)}\n`);
     }
   } catch (e) {
-    const msg = e instanceof AppError ? e.message : String(e);
+    const msg = e instanceof AppError ? e.message : e instanceof Error ? e.message : String(e);
     process.stderr.write(chalk.red(`✖ ${msg}\n`));
     if (e instanceof AppError && e.isSessionExpired) {
       process.stderr.write(chalk.dim("  Ejecuta: plaza login\n"));

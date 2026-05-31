@@ -1,14 +1,13 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-import { getSelectedAddressIndex } from "../config.js";
+import { getSelectedAddressIndex, requireAddress, requireSession } from "../config.js";
 import { AppError } from "../http.js";
 import { buildAnalytics, ensureOrderDetails } from "../services/analytics.js";
 import {
   addToCart,
   getAddresses,
   getCart,
-  getCheckoutUrl,
   removeFromCart,
   selectFulfillmentAddress,
   simulateStock,
@@ -27,7 +26,7 @@ const server = new McpServer({
     "1. select_address   → Fulfillment Gate: clava el polígono logístico",
     "2. search_products  → Búsqueda Honesta: solo resultados con stock global",
     "3. add_to_cart      → Agrega al carrito (bindea perfil automáticamente)",
-    "4. get_checkout_url → Magic Link para pago humano",
+    "4. open_checkout    → Abre browser con carrito precargado para pago humano",
     "",
     "IMPORTANTE: El checkout es exclusivamente humano. Este servidor NO ejecuta pagos.",
   ].join("\n"),
@@ -42,7 +41,7 @@ function fail(msg: string) {
 }
 
 function catchErr(e: unknown) {
-  const msg = e instanceof AppError ? e.message : String(e);
+  const msg = e instanceof AppError ? e.message : e instanceof Error ? e.message : String(e);
   const hint = e instanceof AppError && e.isSessionExpired ? " Ejecuta: plaza login" : "";
   return fail(`${msg}${hint}`);
 }
@@ -56,6 +55,7 @@ server.tool(
   },
   async ({ addressIndex }) => {
     try {
+      requireSession();
       const address = await selectFulfillmentAddress(addressIndex);
       return ok({
         selected: true,
@@ -85,12 +85,9 @@ server.tool(
   },
   async ({ query, limit }) => {
     try {
-      const addressIndex = getSelectedAddressIndex();
-      if (addressIndex === undefined) {
-        return fail(
-          "⚠ Fulfillment Gate requerido. Llama select_address primero para clavarn el polígono logístico y garantizar stock real.",
-        );
-      }
+      requireSession();
+      requireAddress();
+      const addressIndex = getSelectedAddressIndex() as number;
       const results = await searchProducts(query, limit ?? 10);
       // Búsqueda Honesta: filtrar productos sin stock global
       const honest = results.filter((p) => p.inStock);
@@ -115,6 +112,7 @@ server.tool(
   {},
   async () => {
     try {
+      requireSession();
       return ok(await getCart());
     } catch (e) {
       return catchErr(e);
@@ -132,6 +130,8 @@ server.tool(
   },
   async ({ skuId, quantity }) => {
     try {
+      requireSession();
+      requireAddress();
       const cart = await addToCart(skuId, quantity ?? 1);
       const addedItem = cart.items.find((i) => i.id === skuId);
       const warning =
@@ -156,6 +156,7 @@ server.tool(
   },
   async ({ index }) => {
     try {
+      requireSession();
       return ok(await removeFromCart(index));
     } catch (e) {
       return catchErr(e);
@@ -172,6 +173,7 @@ server.tool(
   },
   async ({ limit }) => {
     try {
+      requireSession();
       return ok(await getOrders(limit ?? 10));
     } catch (e) {
       return catchErr(e);
@@ -193,6 +195,7 @@ server.tool(
   },
   async ({ month, topN, limit }) => {
     try {
+      requireSession();
       const orders = await getOrders(limit ?? 50);
       const details = await ensureOrderDetails(orders.map((o) => o.orderId));
       return ok(buildAnalytics(details, { month: month ?? null, topN: topN ?? 10 }));
@@ -215,6 +218,7 @@ server.tool(
   },
   async ({ productId, alertPrice }) => {
     try {
+      requireSession();
       const result = await trackAdd(productId, alertPrice);
       if (!result) return fail(`Producto ${productId} no encontrado.`);
       return ok(result);
@@ -245,6 +249,7 @@ server.tool(
   {},
   async () => {
     try {
+      requireSession();
       const alerts: string[] = [];
       const changes: Array<{ name: string; price: number; diff: number }> = [];
       await trackCheck((name, price, diff) => {
@@ -265,6 +270,7 @@ server.tool(
   {},
   async () => {
     try {
+      requireSession();
       return ok(await getAddresses());
     } catch (e) {
       return catchErr(e);
@@ -285,6 +291,7 @@ server.tool(
   },
   async ({ skuId, addressIndex }) => {
     try {
+      requireSession();
       return ok(await simulateStock(skuId, addressIndex ?? 0));
     } catch (e) {
       return catchErr(e);
@@ -292,22 +299,29 @@ server.tool(
   },
 );
 
-// ── get_checkout_url (Magic Link) ────────────────────────────────────────────
+// ── open_checkout (Browser Handoff Instruction) ──────────────────────────────
+// ADR-0001: Playwright cuelga bajo Bun en Windows — el MCP server no puede
+// lanzar Chromium directamente. La tool devuelve el comando para que el usuario
+// lo ejecute desde su propia terminal (con sesión de escritorio completa).
 server.tool(
-  "get_checkout_url",
-  "PASO 4 — Magic Checkout Link. Genera la URL directa para que el usuario pague en el browser sin fricción. El carrito ya está listo con todos los productos agregados.",
+  "open_checkout",
+  "PASO 4 — Browser Handoff. Retorna el comando que el usuario debe ejecutar en su terminal para abrir Chromium con las cookies de sesión inyectadas y el carrito precargado. El pago es exclusivamente humano.",
   {},
   async () => {
     try {
-      const url = await getCheckoutUrl();
-      return ok({
-        url,
-        message: `👉 Abre este link para pagar: ${url}`,
-        note: "El pago es exclusivamente humano. Este servidor NO ejecuta transacciones.",
-      });
+      requireSession();
+      requireAddress();
     } catch (e) {
       return catchErr(e);
     }
+    return ok({
+      ready: true,
+      message:
+        "Carrito listo. Para abrir la ventana de pago con tu sesión activa, ejecuta este comando en tu PowerShell:",
+      command: "node node_modules/tsx/dist/cli.mjs src/scripts/handoff.ts",
+      cwd: "C:/Users/HP SUPPORT/klipso_reverse/Cli-propios/plazavea-cli",
+      note: "El pago es exclusivamente humano. Este servidor NO ejecuta transacciones.",
+    });
   },
 );
 
