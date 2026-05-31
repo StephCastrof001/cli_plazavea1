@@ -63,16 +63,37 @@ export async function getAddresses(): Promise<SavedAddress[]> {
   return raw.shippingData?.availableAddresses ?? [];
 }
 
-export async function simulateStock(
-  skuId: string,
-  addressIndex = 0,
-): Promise<{
+type SlaEntry = { id: string; shippingEstimate: string; polygonName?: string };
+type LogisticsEntry = { itemId: string; slas: SlaEntry[] };
+type SimulateResult = {
   available: boolean;
   slaName: string | null;
   shippingEstimate: string | null;
   polygon: string | null;
   address: SavedAddress | null;
-}> {
+};
+
+// Función pura extraída para testabilidad — interpreta logisticsInfo de VTEX
+export function parseSimulateResult(
+  skuId: string,
+  logisticsInfo: LogisticsEntry[] | undefined,
+  address: SavedAddress,
+): SimulateResult {
+  const entry = logisticsInfo?.find((li) => li.itemId === skuId);
+  if (!entry || entry.slas.length === 0) {
+    return { available: false, slaName: null, shippingEstimate: null, polygon: null, address };
+  }
+  const sla = entry.slas[0];
+  return {
+    available: true,
+    slaName: sla.id,
+    shippingEstimate: sla.shippingEstimate,
+    polygon: sla.polygonName ?? null,
+    address,
+  };
+}
+
+export async function simulateStock(skuId: string, addressIndex = 0): Promise<SimulateResult> {
   const raw = await http.get<OrderFormWithShipping>(`${WWW_BASE_URL}${ENDPOINTS.orderForm}`);
   const addresses = raw.shippingData?.availableAddresses ?? [];
   const address = addresses[addressIndex] ?? null;
@@ -98,18 +119,5 @@ export async function simulateStock(
     attachBody,
   );
 
-  const logisticsForSku = attached.shippingData?.logisticsInfo?.find((li) => li.itemId === skuId);
-
-  if (!logisticsForSku || logisticsForSku.slas.length === 0) {
-    return { available: false, slaName: null, shippingEstimate: null, polygon: null, address };
-  }
-
-  const sla = logisticsForSku.slas[0];
-  return {
-    available: true,
-    slaName: sla.id,
-    shippingEstimate: sla.shippingEstimate,
-    polygon: sla.polygonName ?? null,
-    address,
-  };
+  return parseSimulateResult(skuId, attached.shippingData?.logisticsInfo, address);
 }

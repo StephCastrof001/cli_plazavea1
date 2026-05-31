@@ -1,8 +1,25 @@
 {
   "name": "plazavea-cli",
-  "version": "3.0.0",
-  "description": "Plaza Vea CLI v3 — VTEX headless + MCP server",
+  "version": "3.1.0",
+  "description": "Servidor MCP para retail VTEX — Plaza Vea. CLI + 11 tools para Claude Code, Cursor y cualquier cliente MCP.",
   "type": "module",
+  "license": "MIT",
+  "author": "Stephanie Castro",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/StephCastrof001/cli_plazavea1.git"
+  },
+  "keywords": [
+    "mcp",
+    "vtex",
+    "retail",
+    "plaza-vea",
+    "claude-code",
+    "cursor",
+    "cli",
+    "peru",
+    "supermercado"
+  ],
   "bin": {
     "plaza": "./index.ts"
   },
@@ -12,6 +29,7 @@
     "mcp": "bun run src/mcp/server.ts",
     "server": "bun run server.ts",
     "test": "bun test",
+    "smoke": "bun run scripts/smoke.ts",
     "lint": "biome check src/",
     "lint:fix": "biome check --write src/"
   },

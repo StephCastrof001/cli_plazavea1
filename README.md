@@ -22,14 +22,14 @@ La app de Plaza Vea muestra tus órdenes pero no las suma, no las analiza, y no 
 ```bash
 # Todo esto sin abrir el browser:
 plaza search "arroz costeño" --output json   # buscar con precios reales
-plaza simulate --sku X --postal 15001         # verificar stock en tu local
+plaza simulate --sku X                        # verificar stock en tu local (usa dirección guardada)
 plaza add X                                   # agregar al carrito
 plaza cart                                    # confirmar
 ```
 
 ## Qué hace
 
-- 🤖 **MCP server** — Claude opera tus compras en Plaza Vea nativamente (5 tools)
+- 🤖 **MCP server** — Claude Code, Cursor o cualquier cliente MCP opera tus compras nativamente (11 tools)
 - 📍 **Verificar stock local** (`simulate`) — distingue stock global de stock en tu tienda
 - 🔍 Buscar con los **3 niveles de precio** (regular, descuento sin tarjeta, Tarjeta OH)
 - 🛒 Gestionar carrito desde terminal (lo que Claude agrega se ve en la app y viceversa)
@@ -75,7 +75,9 @@ bun run index.ts add <skuId> --quantity 2      # Agregar (--dry-run para preview
 bun run index.ts remove <índice>               # Eliminar ítem
 
 # Stock por local (evita bug global vs local)
-bun run index.ts simulate --sku <skuId> --postal 15001
+bun run index.ts simulate --sku <skuId>              # usa 1era dirección guardada
+bun run index.ts simulate --sku <skuId> --address 1  # usa 2da dirección
+bun run index.ts simulate --list-addresses           # ver todas las direcciones
 
 # Pedidos
 bun run index.ts orders --limit 5
@@ -98,9 +100,9 @@ bun run server.ts    # Inicia en http://localhost:3847
 | GET | `/orders?limit=N` | Historial de pedidos |
 | GET | `/health` | Estado del servidor |
 
-## Servidor MCP (integración con Claude)
+## Servidor MCP (integración con Claude Code, Cursor, etc.)
 
-El CLI incluye un servidor MCP que expone tools para que Claude opere Plaza Vea nativamente.
+El CLI incluye un servidor MCP que expone tools para que cualquier cliente MCP opere Plaza Vea nativamente.
 
 ### Setup para Claude Code
 
@@ -110,14 +112,16 @@ Agrega `.mcp.json` a la raíz de tu proyecto:
 {
   "mcpServers": {
     "plaza-vea": {
-      "command": "bun",
+      "command": "/ruta/completa/a/bun",
       "args": ["run", "/path/to/plazavea-cli/src/mcp/server.ts"]
     }
   }
 }
 ```
 
-### Tools disponibles (9)
+> **Nota:** usa la ruta completa a `bun` (no solo `"bun"`). En macOS/Linux: `which bun`. En Windows: `C:/Users/<usuario>/.bun/bin/bun.exe`.
+
+### Tools disponibles (11)
 
 | Tool | Descripción |
 |------|-------------|
@@ -130,6 +134,8 @@ Agrega `.mcp.json` a la raíz de tu proyecto:
 | `track_add` | Agregar producto al radar de precios (con alerta opcional) |
 | `track_list` | Ver productos rastreados con precio actual |
 | `track_check` | Refrescar precios y ver alertas activas |
+| `get_addresses` | Ver direcciones de entrega guardadas en tu cuenta |
+| `simulate_stock` | Verificar disponibilidad en tu local por dirección (usa ANTES de `add_to_cart`) |
 
 ## Estructura de precios (3 niveles)
 
@@ -156,13 +162,13 @@ src/
   schemas/           → Zod: product (PriceInfo 3 niveles), cart
   services/          → Lógica: auth (Playwright), products, cart, orders
   commands/          → Un archivo por comando
-  mcp/server.ts      → Servidor MCP (5 tools)
+  mcp/server.ts      → Servidor MCP (11 tools)
 ```
 
 ### Doble host (importante)
 
-- `tienda.plazavea.com.pe` → search, cart, orderForm, simulate
-- `www.plazavea.com.pe` → OMS / orders (`/api/oms/user/orders`)
+- `tienda.plazavea.com.pe` → search / catálogo
+- `www.plazavea.com.pe` → carrito, orderForm, simulate, OMS / orders
 
 La misma cookie funciona en ambos (dominio `.plazavea.com.pe`).
 
