@@ -3,7 +3,13 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import { AppError } from "../http.js";
 import { buildAnalytics, ensureOrderDetails } from "../services/analytics.js";
-import { addToCart, getCart, removeFromCart } from "../services/cart.js";
+import {
+  addToCart,
+  getAddresses,
+  getCart,
+  removeFromCart,
+  simulateStock,
+} from "../services/cart.js";
 import { getOrders } from "../services/orders.js";
 import { searchProducts } from "../services/products.js";
 import { trackAdd, trackCheck, trackList } from "../services/tracker.js";
@@ -120,6 +126,28 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
         "Refresca precios de todos los productos rastreados. Devuelve cambios y alertas activas.",
       inputSchema: { type: "object", properties: {}, required: [] },
     },
+    {
+      name: "get_addresses",
+      description:
+        "Lista las direcciones de envío guardadas en la cuenta. Úsalo para saber qué locales puede verificar simulate_stock.",
+      inputSchema: { type: "object", properties: {}, required: [] },
+    },
+    {
+      name: "simulate_stock",
+      description:
+        "Verifica si un producto tiene stock en TU local (no el global), usando una dirección guardada. Devuelve disponibilidad, almacén y estimado de entrega. Úsalo ANTES de add_to_cart para evitar que el checkout falle por falta de stock local.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          skuId: { type: "string", description: "SKU ID del producto (de search_products)" },
+          addressIndex: {
+            type: "number",
+            description: "Índice de la dirección guardada (default 0). Ver get_addresses.",
+          },
+        },
+        required: ["skuId"],
+      },
+    },
   ],
 }));
 
@@ -206,6 +234,18 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           },
         ],
       };
+    }
+
+    if (name === "get_addresses") {
+      const addresses = await getAddresses();
+      return { content: [{ type: "text", text: JSON.stringify(addresses, null, 2) }] };
+    }
+
+    if (name === "simulate_stock") {
+      const skuId = String(a.skuId ?? "");
+      const addressIndex = typeof a.addressIndex === "number" ? a.addressIndex : 0;
+      const result = await simulateStock(skuId, addressIndex);
+      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
     }
 
     return errorResult(`Tool desconocida: ${name}`);
