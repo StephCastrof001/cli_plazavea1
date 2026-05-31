@@ -22,6 +22,22 @@ export async function getCart(): Promise<CartNormalized> {
   return normalizeOrderForm(raw);
 }
 
+async function bindProfileToCart(orderFormId: string): Promise<void> {
+  // Bindea el carrito al usuario autenticado via clientProfileData.
+  // Sin este bind, VTEX puede mantener el carrito del CLI separado del browser.
+  try {
+    const profile = await http.get<{ email?: string }>(`${WWW_BASE_URL}/api/checkout/pub/profiles`);
+    if (profile?.email) {
+      await http.post(
+        `${WWW_BASE_URL}/api/checkout/pub/orderForm/${orderFormId}/attachments/clientProfileData`,
+        { email: profile.email },
+      );
+    }
+  } catch {
+    // Non-fatal — el carrito funciona aunque no se pueda bindear el perfil
+  }
+}
+
 export async function addToCart(
   skuId: string,
   quantity: number,
@@ -30,6 +46,10 @@ export async function addToCart(
   const orderFormId = await getOrderFormId();
   const body = { orderItems: [{ id: skuId, quantity, seller }] };
   const raw = await http.post<unknown>(`${WWW_BASE_URL}${ENDPOINTS.addItem(orderFormId)}`, body);
+
+  // Bindear perfil al orderForm para que el carrito sea visible en el browser web
+  await bindProfileToCart(orderFormId);
+
   return normalizeOrderForm(raw);
 }
 
