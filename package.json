@@ -20,6 +20,13 @@
     "peru",
     "supermercado"
   ],
+  "files": [
+    "index.ts",
+    "server.ts",
+    "src/",
+    "README.md",
+    "LICENSE"
+  ],
   "bin": {
     "plaza": "./index.ts"
   },
