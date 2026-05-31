@@ -15,7 +15,7 @@ import { searchProducts } from "../services/products.js";
 import { trackAdd, trackCheck, trackList } from "../services/tracker.js";
 
 const server = new Server(
-  { name: "plazavea-cli", version: "3.1.0" },
+  { name: "Plaza Vea 🛒", version: "3.1.0" },
   { capabilities: { tools: {} } },
 );
 

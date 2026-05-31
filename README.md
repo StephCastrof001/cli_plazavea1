@@ -1,16 +1,25 @@
-<p align="center">
-  <strong>plazavea-cli</strong> — Servidor MCP para retail VTEX
-</p>
+<div align="center">
 
-<p align="center">
-  Opera tus compras de supermercado desde Claude Code o Cursor.<br>
-  Claude busca, verifica stock en TU local y agrega al carrito — sin que abras el browser.<br>
-  <sub>Primera implementación: Plaza Vea (Perú). Arquitectura VTEX → portable a Wong, Tottus, Vivanda.</sub>
-</p>
+```
+██████  ██       █████  ███████  █████      ██    ██ ███████  █████
+██   ██ ██      ██   ██    ███  ██   ██     ██    ██ ██      ██   ██
+██████  ██      ███████   ███   ███████     ██    ██ █████   ███████
+██      ██      ██   ██  ███    ██   ██      ██  ██  ██      ██   ██
+██      ███████ ██   ██ ███████ ██   ██       ████   ███████ ██   ██
+```
 
-<p align="center">
-  <code>mcp</code> · <code>claude-code</code> · <code>cursor</code> · <code>vtex</code> · <code>retail</code>
-</p>
+**Servidor MCP para retail VTEX** · v3.1.0
+
+Opera tus compras de supermercado desde Claude Code o Cursor.<br>
+El agente busca, verifica stock en **tu local** y agrega al carrito — sin abrir el browser.<br>
+<sub>Primera implementación: Plaza Vea (Perú). Arquitectura VTEX → portable a Wong, Tottus, Vivanda.</sub>
+
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue?logo=typescript)
+![Bun](https://img.shields.io/badge/runtime-Bun-black?logo=bun)
+![MCP](https://img.shields.io/badge/MCP-11%20tools-green)
+
+</div>
 
 ---
 
