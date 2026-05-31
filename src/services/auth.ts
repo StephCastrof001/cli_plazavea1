@@ -41,9 +41,26 @@ export async function loginWithBrowser(): Promise<boolean> {
     await new Promise((r) => setTimeout(r, 1500));
   }
 
-  const allCookies = await context.cookies();
   if (success) {
-    const plazaCookies = allCookies.filter((c) => c.domain.includes("plazavea"));
+    // Navegar al orderForm en www.plazavea.com.pe para que VTEX setee
+    // el cookie checkout.vtex.com (__ofid = orderFormId del usuario).
+    // Sin este cookie el CLI crea un orderFormId separado al del browser.
+    try {
+      process.stderr.write("  Sincronizando orderForm con tu cuenta...\n");
+      await page.goto("https://www.plazavea.com.pe/api/checkout/pub/orderForm", {
+        waitUntil: "domcontentloaded",
+        timeout: 12000,
+      });
+      await new Promise((r) => setTimeout(r, 1500));
+    } catch {
+      // Non-fatal — continuar sin checkout cookie
+    }
+
+    // Capturar TODOS los cookies de plazavea.com.pe + vtex.com (checkout cookie puede vivir en vtex.com)
+    const finalCookies = await context.cookies();
+    const plazaCookies = finalCookies.filter(
+      (c) => c.domain.includes("plazavea") || c.name === "checkout.vtex.com",
+    );
     saveConfig({ cookies: plazaCookies, savedAt: new Date().toISOString() });
     const names = plazaCookies.map((c) => c.name).join(", ");
     process.stderr.write(`  Cookies capturadas: ${names}\n`);
