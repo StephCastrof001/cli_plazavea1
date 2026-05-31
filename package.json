@@ -21,6 +21,7 @@
     "supermercado"
   ],
   "files": [
+    "bin/",
     "index.ts",
     "server.ts",
     "src/",
@@ -28,7 +29,7 @@
     "LICENSE"
   ],
   "bin": {
-    "plaza": "./index.ts"
+    "plaza": "./bin/plaza"
   },
   "scripts": {
     "plaza": "bun run index.ts",
