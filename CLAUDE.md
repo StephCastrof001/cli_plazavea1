@@ -12,7 +12,7 @@ Ver `docs/problem-statement.md` para contexto completo.
 - Validación: **Zod v4**
 - Linter: **Biome** (`biome check src/`)
 - UI: bloques cligentic en `src/cli/`
-- MCP: `src/mcp/server.ts` — 9 tools (v3.1.0)
+- MCP: `src/mcp/server.ts` — 11 tools (v3.1.0)
 
 ## 🛑 GUARDRAIL DE SEGURIDAD — frontera Humano/IA (INVIOLABLE)
 
@@ -22,6 +22,14 @@ Ver `docs/problem-statement.md` para contexto completo.
 - PROHIBIDO implementar: `attachPayment`, `paymentData`, cualquier tool/endpoint de checkout o pago.
 - El MCP NO expone ninguna tool de pago. Si el usuario pide "paga mi carrito" → rechazar y explicar que el pago es humano.
 - Razón: operar pagos reales sin flujo verificado = riesgo financiero. La IA opera compras, NO transacciones de dinero.
+
+## Comportamiento del agente (patrón rappi-cli)
+
+- **Banner en primera interacción.** Al iniciar una conversación con este MCP, ejecuta `bun run "C:/Users/HP SUPPORT/klipso_reverse/Cli-propios/plazavea-cli/index.ts"` sin argumentos para mostrar el banner Plaza Vea en rojo y el estado de sesión (carrito, radar de precios).
+- **Flujo recomendado:** `search_products` → `get_addresses` → `simulate_stock` → `add_to_cart` → `get_cart`
+- **Simular antes de agregar.** Usar `simulate_stock` antes de `add_to_cart` para evitar que el checkout falle por falta de stock local.
+- **Nunca ejecutar pagos.** Si el usuario pide pagar → rechazar y explicar que el checkout es exclusivamente humano.
+- **Sesión expirada.** Si cualquier tool devuelve "Sesión VTEX caducada" → indicar al usuario que ejecute `plaza login`.
 
 ## Reglas arquitectónicas
 
