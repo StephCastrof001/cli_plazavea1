@@ -46,7 +46,16 @@ Opciones globales:
 const args = process.argv.slice(2);
 const command = args[0];
 
-if (!command || command === "--help" || command === "-h") {
+if (!command) {
+  // Sin args → banner + estado (paridad con rappi/antigravity)
+  const { printBanner, showStatus } = await import("./src/ui/banner.js");
+  printBanner("3.1.0");
+  await showStatus();
+  console.log(HELP);
+  process.exit(0);
+}
+
+if (command === "--help" || command === "-h") {
   console.log(HELP);
   process.exit(0);
 }
