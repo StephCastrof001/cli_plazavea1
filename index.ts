@@ -10,6 +10,7 @@ const COMMANDS: Record<string, string> = {
   cart:     "src/commands/cart.ts",
   add:      "src/commands/add.ts",
   remove:   "src/commands/remove.ts",
+  buy:      "src/commands/buy.ts",
   simulate:  "src/commands/simulate.ts",
   orders:    "src/commands/orders.ts",
   track:     "src/commands/track.ts",
@@ -31,7 +32,8 @@ Comandos:
   cart                           Ver carrito [--output json]
   add <skuId>                    Agregar al carrito [--quantity N] [--dry-run]
   remove <índice>                Eliminar del carrito [--dry-run]
-  simulate                       Verificar stock local [--sku X --postal Y]
+  buy <término>                  Búsqueda interactiva → seleccionar → add [--limit N]
+  simulate                       Verificar stock local [--sku X] [--address N]
   orders                         Historial de pedidos [--limit N] [--output json]
   track <sub>                    Radar de precios (add/list/check/remove/history)
   analytics                      Gasto por período [--month YYYY-MM] [--top N]
