@@ -8,7 +8,17 @@ async function getOrderFormId(): Promise<string> {
 }
 
 export async function getCart(): Promise<CartNormalized> {
-  const raw = await http.get<unknown>(`${WWW_BASE_URL}${ENDPOINTS.orderForm}`);
+  const raw = await http.get<Record<string, unknown>>(`${WWW_BASE_URL}${ENDPOINTS.orderForm}`);
+
+  // VTEX puede crear un carrito anónimo (loggedIn: false) si no reconoce la sesión.
+  // Llamar /profiles fuerza a VTEX a vincular el orderForm al usuario autenticado
+  // y sincronizarlo con el carrito que el usuario ve en el browser.
+  if (raw.loggedIn === false) {
+    await http.get(`${WWW_BASE_URL}/api/checkout/pub/profiles`).catch(() => {});
+    const synced = await http.get<Record<string, unknown>>(`${WWW_BASE_URL}${ENDPOINTS.orderForm}`);
+    return normalizeOrderForm(synced);
+  }
+
   return normalizeOrderForm(raw);
 }
 

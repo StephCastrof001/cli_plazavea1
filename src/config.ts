@@ -51,7 +51,8 @@ export function removeConfig(): void {
 export function configExists(): boolean {
   if (!fs.existsSync(CONFIG_PATH)) return false;
   const config = getConfig();
-  return config.cookies.some((c) => c.name === "vtex_session");
+  // VtexIdclientAutCookie = token real de login. vtex_session es anónimo.
+  return config.cookies.some((c) => c.name.startsWith("VtexIdclientAutCookie"));
 }
 
 export function configAge(): number {

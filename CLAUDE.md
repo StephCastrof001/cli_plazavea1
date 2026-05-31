@@ -30,6 +30,7 @@ Ver `docs/problem-statement.md` para contexto completo.
 - **Simular antes de agregar.** Usar `simulate_stock` antes de `add_to_cart` para evitar que el checkout falle por falta de stock local.
 - **Nunca ejecutar pagos.** Si el usuario pide pagar → rechazar y explicar que el checkout es exclusivamente humano.
 - **Sesión expirada.** Si cualquier tool devuelve "Sesión VTEX caducada" → indicar al usuario que ejecute `plaza login`.
+- **Estado de pedidos — NUNCA alucinar.** Usar SIEMPRE el campo `statusLabel` de cada orden (calculado desde `VTEX_STATUS_MAP`). PROHIBIDO interpretar el campo `status` crudo como "pendiente" o cualquier otro texto libre. Si `status = "invoiced"` → el pedido está "Facturado / Enviado", NO pendiente. Si el status no está en el mapa → mostrarlo tal cual sin traducir.
 
 ## Reglas arquitectónicas
 
