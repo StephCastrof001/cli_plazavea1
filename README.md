@@ -130,6 +130,40 @@ Agrega `.mcp.json` a la raíz de tu proyecto:
 
 > **Nota:** usa la ruta completa a `bun` (no solo `"bun"`). En macOS/Linux: `which bun`. En Windows: `C:/Users/<usuario>/.bun/bin/bun.exe`.
 
+### Setup para Claude Desktop
+
+Edita el archivo de configuración de Claude Desktop:
+
+- **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
+- **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
+
+```json
+{
+  "mcpServers": {
+    "Plaza Vea 🛒": {
+      "command": "C:/Users/TU_USUARIO/.bun/bin/bun.exe",
+      "args": ["run", "C:/ruta/completa/a/plazavea-cli/src/mcp/server.ts"]
+    }
+  }
+}
+```
+
+> Claude Desktop no hereda el PATH del shell — la ruta completa a `bun` es obligatoria.
+> Reinicia Claude Desktop después de guardar el archivo.
+
+### Setup para Cursor
+
+Agrega en `Settings → MCP Servers`:
+
+```json
+{
+  "Plaza Vea 🛒": {
+    "command": "/ruta/completa/a/bun",
+    "args": ["run", "/ruta/completa/a/plazavea-cli/src/mcp/server.ts"]
+  }
+}
+```
+
 ### Tools disponibles (11)
 
 | Tool | Descripción |
