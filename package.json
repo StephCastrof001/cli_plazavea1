@@ -29,7 +29,7 @@
     "LICENSE"
   ],
   "bin": {
-    "plaza": "./bin/plaza"
+    "plaza": "./bin/plaza.mjs"
   },
   "scripts": {
     "plaza": "bun run index.ts",
