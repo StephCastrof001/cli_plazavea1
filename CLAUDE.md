@@ -31,6 +31,19 @@ Ver `docs/problem-statement.md` para contexto completo.
 - **Nunca ejecutar pagos.** Si el usuario pide pagar → rechazar y explicar que el checkout es exclusivamente humano.
 - **Sesión expirada.** Si cualquier tool devuelve "Sesión VTEX caducada" → indicar al usuario que ejecute `plaza login`.
 - **Estado de pedidos — NUNCA alucinar.** Usar SIEMPRE el campo `statusLabel` de cada orden (calculado desde `VTEX_STATUS_MAP`). PROHIBIDO interpretar el campo `status` crudo como "pendiente" o cualquier otro texto libre. Si `status = "invoiced"` → el pedido está "Facturado / Enviado", NO pendiente. Si el status no está en el mapa → mostrarlo tal cual sin traducir.
+- **Golden Flow — SIEMPRE en este orden:**
+  1. `select_address` → clavado del polígono logístico (OBLIGATORIO antes de buscar)
+  2. `search_products` → tabla de 4 columnas (ver formato abajo)
+  3. `add_to_cart` → agregar productos
+  4. `get_checkout_url` → entregar Magic Link al usuario para pagar
+- **Formato de búsqueda — SIEMPRE tabla de 4 columnas:**
+  ```
+  | Producto | Precio Lista | Precio Online | Precio Tarjeta OH! |
+  | :--- | :--- | :--- | :--- |
+  | Arroz COSTEÑO 5kg | S/ 25.90 | S/ 21.90 | S/ 18.90 |
+  ```
+  Usar `-` si un precio no aplica. NUNCA usar la palabra "LED" — el término correcto es "Precio Online".
+- **Magic Checkout Link — al finalizar compra:** Llamar `get_checkout_url` y mostrar el link al usuario. NUNCA intentar completar el pago tú mismo.
 
 ## Reglas arquitectónicas
 

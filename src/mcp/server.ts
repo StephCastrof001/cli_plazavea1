@@ -1,13 +1,16 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
+import { getSelectedAddressIndex } from "../config.js";
 import { AppError } from "../http.js";
 import { buildAnalytics, ensureOrderDetails } from "../services/analytics.js";
 import {
   addToCart,
   getAddresses,
   getCart,
+  getCheckoutUrl,
   removeFromCart,
+  selectFulfillmentAddress,
   simulateStock,
 } from "../services/cart.js";
 import { getOrders } from "../services/orders.js";
@@ -16,11 +19,15 @@ import { trackAdd, trackCheck, trackList } from "../services/tracker.js";
 
 const server = new McpServer({
   name: "Plaza Vea 🛒",
-  version: "3.1.0",
+  version: "3.2.0",
   description: [
     "Servidor MCP para retail VTEX — Plaza Vea (Perú).",
     "",
-    "Flujo recomendado: search_products → get_addresses → simulate_stock → add_to_cart → get_cart",
+    "Golden Flow (SIEMPRE en este orden):",
+    "1. select_address   → Fulfillment Gate: clava el polígono logístico",
+    "2. search_products  → Búsqueda Honesta: solo resultados con stock global",
+    "3. add_to_cart      → Agrega al carrito (bindea perfil automáticamente)",
+    "4. get_checkout_url → Magic Link para pago humano",
     "",
     "IMPORTANTE: El checkout es exclusivamente humano. Este servidor NO ejecuta pagos.",
   ].join("\n"),
@@ -40,17 +47,61 @@ function catchErr(e: unknown) {
   return fail(`${msg}${hint}`);
 }
 
-// ── search_products ──────────────────────────────────────────────────────────
+// ── select_address (Fulfillment Gate) ────────────────────────────────────────
+server.tool(
+  "select_address",
+  "PASO 1 OBLIGATORIO — Fulfillment Gate. Selecciona una dirección de entrega y la clava en el orderForm. A partir de aquí, el stock es 100% real para tu local. Llama get_addresses primero para ver las opciones.",
+  {
+    addressIndex: z.number().describe("Índice de la dirección (0-based, de get_addresses)"),
+  },
+  async ({ addressIndex }) => {
+    try {
+      const address = await selectFulfillmentAddress(addressIndex);
+      return ok({
+        selected: true,
+        address,
+        message: `Polígono logístico clavado en ${address.neighborhood}, ${address.city}. Ahora puedes buscar con stock local real.`,
+      });
+    } catch (e) {
+      return catchErr(e);
+    }
+  },
+);
+
+// ── search_products (Búsqueda Honesta) ───────────────────────────────────────
 server.tool(
   "search_products",
-  "Busca productos en Plaza Vea. Devuelve lista con precios (regular, oferta LED, Tarjeta OH) y stock global.",
+  [
+    "PASO 2 — Búsqueda Honesta. Busca productos filtrando los sin stock global.",
+    "IMPORTANTE: Requiere haber llamado select_address primero (Fulfillment Gate).",
+    "Si no hay dirección seleccionada, retorna error con instrucción.",
+    "Muestra resultados SIEMPRE en tabla de 4 columnas:",
+    "| Producto | Precio Lista | Precio Online | Precio Tarjeta OH! |",
+    "Usa - si un precio no aplica. PROHIBIDO usar la palabra LED.",
+  ].join("\n"),
   {
     query: z.string().describe("Término de búsqueda"),
     limit: z.number().optional().describe("Máximo de resultados (default: 10)"),
   },
   async ({ query, limit }) => {
     try {
-      return ok(await searchProducts(query, limit ?? 10));
+      const addressIndex = getSelectedAddressIndex();
+      if (addressIndex === undefined) {
+        return fail(
+          "⚠ Fulfillment Gate requerido. Llama select_address primero para clavarn el polígono logístico y garantizar stock real.",
+        );
+      }
+      const results = await searchProducts(query, limit ?? 10);
+      // Búsqueda Honesta: filtrar productos sin stock global
+      const honest = results.filter((p) => p.inStock);
+      return ok({
+        query,
+        addressIndex,
+        total: results.length,
+        available: honest.length,
+        filtered_out: results.length - honest.length,
+        results: honest,
+      });
     } catch (e) {
       return catchErr(e);
     }
@@ -235,6 +286,25 @@ server.tool(
   async ({ skuId, addressIndex }) => {
     try {
       return ok(await simulateStock(skuId, addressIndex ?? 0));
+    } catch (e) {
+      return catchErr(e);
+    }
+  },
+);
+
+// ── get_checkout_url (Magic Link) ────────────────────────────────────────────
+server.tool(
+  "get_checkout_url",
+  "PASO 4 — Magic Checkout Link. Genera la URL directa para que el usuario pague en el browser sin fricción. El carrito ya está listo con todos los productos agregados.",
+  {},
+  async () => {
+    try {
+      const url = await getCheckoutUrl();
+      return ok({
+        url,
+        message: `👉 Abre este link para pagar: ${url}`,
+        note: "El pago es exclusivamente humano. Este servidor NO ejecuta transacciones.",
+      });
     } catch (e) {
       return catchErr(e);
     }

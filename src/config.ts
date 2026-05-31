@@ -17,6 +17,7 @@ const CookieSchema = z.object({
 const ConfigSchema = z.object({
   cookies: z.array(CookieSchema).default([]),
   savedAt: z.string().optional(),
+  selectedAddressIndex: z.number().optional(), // Fulfillment Gate — dirección activa
 });
 
 export type Config = z.infer<typeof ConfigSchema>;
@@ -42,6 +43,15 @@ export function saveConfig(config: Config): void {
   } catch {
     /* Windows */
   }
+}
+
+export function saveSelectedAddress(index: number): void {
+  const config = getConfig();
+  saveConfig({ ...config, selectedAddressIndex: index });
+}
+
+export function getSelectedAddressIndex(): number | undefined {
+  return getConfig().selectedAddressIndex;
 }
 
 export function removeConfig(): void {

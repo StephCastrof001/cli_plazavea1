@@ -1,3 +1,4 @@
+import { saveSelectedAddress } from "../config.js";
 import { COUNTRY, ENDPOINTS, WWW_BASE_URL } from "../constants.js";
 import { http } from "../http.js";
 import { type CartNormalized, type OrderFormRaw, normalizeOrderForm } from "../schemas/cart.js";
@@ -86,6 +87,38 @@ interface OrderFormWithShipping {
       slas: Array<{ id: string; shippingEstimate: string; polygonName?: string }>;
     }>;
   };
+}
+
+// Fulfillment Gate — selecciona una dirección y la "clava" en el orderForm.
+// Esto hace que simulate_stock y el carrito usen stock local real desde el inicio.
+export async function selectFulfillmentAddress(addressIndex: number): Promise<SavedAddress> {
+  const raw = await http.get<OrderFormWithShipping>(`${WWW_BASE_URL}${ENDPOINTS.orderForm}`);
+  const address = raw.shippingData?.availableAddresses?.[addressIndex] ?? null;
+  if (!address)
+    throw new Error(
+      `Dirección ${addressIndex} no encontrada. Usa get_addresses para ver las disponibles.`,
+    );
+
+  const itemCount = Math.max(raw.items?.length ?? 0, 1);
+  await http.post(
+    `${WWW_BASE_URL}/api/checkout/pub/orderForm/${raw.orderFormId}/attachments/shippingData`,
+    {
+      address,
+      logisticsInfo: Array.from({ length: itemCount }, (_, i) => ({
+        itemIndex: i,
+        selectedSla: "Despacho a Domicilio",
+        selectedDeliveryChannel: "delivery",
+      })),
+    },
+  );
+
+  saveSelectedAddress(addressIndex);
+  return address;
+}
+
+export async function getCheckoutUrl(): Promise<string> {
+  const raw = await http.get<{ orderFormId: string }>(`${WWW_BASE_URL}${ENDPOINTS.orderForm}`);
+  return `https://www.plazavea.com.pe/checkout/#/cart?orderFormId=${raw.orderFormId}`;
 }
 
 export async function getAddresses(): Promise<SavedAddress[]> {
