@@ -12,6 +12,11 @@ export class AppError extends Error {
   }
 }
 
+// Patrón de resiliencia — recuperado de plazavea-antigravity/src/http.ts
+const TIMEOUT_MS = 15_000;
+const MAX_RETRIES = 3;
+const BACKOFF_MS = [500, 1500, 3000] as const;
+
 function parseErrorBody(body: string): string {
   try {
     const json = JSON.parse(body) as Record<string, unknown>;
@@ -42,21 +47,45 @@ export async function request<T>(path: string, options: RequestInit = {}): Promi
   const url = path.startsWith("http") ? path : `${BASE_URL}${path}`;
   const headers = buildHeaders(options.headers as Record<string, string> | undefined);
 
-  const response = await fetch(url, { ...options, headers }).catch((err: unknown) => {
-    const msg = err instanceof Error ? err.message : String(err);
-    throw new AppError(`Network error: ${msg}`);
-  });
+  let lastError: Error | null = null;
 
-  if (!response.ok) {
-    const body = await response.text().catch(() => "");
-    const expired = isExpiredStatus(response.status);
-    const message = expired
-      ? "Sesión VTEX caducada. Ejecuta: plaza login"
-      : parseErrorBody(body) || `HTTP ${response.status}`;
-    throw new AppError(message, response.status, expired);
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+
+    try {
+      const response = await fetch(url, { ...options, headers, signal: controller.signal });
+      clearTimeout(timer);
+
+      if (!response.ok) {
+        const body = await response.text().catch(() => "");
+        const expired = isExpiredStatus(response.status);
+        const message = expired
+          ? "Sesión VTEX caducada. Ejecuta: plaza login"
+          : parseErrorBody(body) || `HTTP ${response.status}`;
+        throw new AppError(message, response.status, expired);
+      }
+
+      return response.json() as Promise<T>;
+    } catch (err) {
+      clearTimeout(timer);
+      lastError = err as Error;
+
+      // No reintentar en sesión expirada (401/403) ni en timeout propio
+      if (err instanceof AppError && err.isSessionExpired) throw err;
+      if ((err as Error).name === "AbortError") {
+        lastError = new AppError(`Timeout (${TIMEOUT_MS}ms): ${url}`, 0);
+        throw lastError; // timeout = no reintentar, falla rápido
+      }
+
+      // No reintentar en el último intento
+      if (attempt < MAX_RETRIES - 1) {
+        await new Promise((r) => setTimeout(r, BACKOFF_MS[attempt]));
+      }
+    }
   }
 
-  return response.json() as Promise<T>;
+  throw lastError ?? new AppError(`Request failed after ${MAX_RETRIES} attempts: ${url}`);
 }
 
 export const http = {
