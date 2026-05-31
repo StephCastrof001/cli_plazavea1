@@ -11,6 +11,7 @@
     "login": "node node_modules/tsx/dist/cli.mjs src/commands/login.ts",
     "mcp": "bun run src/mcp/server.ts",
     "server": "bun run server.ts",
+    "test": "bun test",
     "lint": "biome check src/",
     "lint:fix": "biome check --write src/"
   },

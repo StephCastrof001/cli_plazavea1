@@ -4,3 +4,14 @@ dist/
 *.env
 bun.lockb
 bun.lock
+
+# Seguridad — datos de sesión y cache (NUNCA commitear)
+session.json
+prices.json
+orders-cache.json
+*.config.json
+.config/
+debug_*.ts
+
+# Tooling local de Claude Code (no del producto)
+.claude/
