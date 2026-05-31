@@ -14,6 +14,15 @@ Ver `docs/problem-statement.md` para contexto completo.
 - UI: bloques cligentic en `src/cli/`
 - MCP: `src/mcp/server.ts` — 9 tools (v3.1.0)
 
+## 🛑 GUARDRAIL DE SEGURIDAD — frontera Humano/IA (INVIOLABLE)
+
+> **NUNCA ejecutar pagos. El checkout es exclusivamente humano.**
+
+- El CLI/MCP llega hasta el carrito (`add`/`cart`/`simulate`). **El pago lo hace el usuario, en su app/web.**
+- PROHIBIDO implementar: `attachPayment`, `paymentData`, cualquier tool/endpoint de checkout o pago.
+- El MCP NO expone ninguna tool de pago. Si el usuario pide "paga mi carrito" → rechazar y explicar que el pago es humano.
+- Razón: operar pagos reales sin flujo verificado = riesgo financiero. La IA opera compras, NO transacciones de dinero.
+
 ## Reglas arquitectónicas
 
 1. Toda data de VTEX pasa por schema Zod en `src/schemas/` antes de usarse
