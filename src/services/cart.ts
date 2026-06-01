@@ -99,18 +99,20 @@ export async function selectFulfillmentAddress(addressIndex: number): Promise<Sa
       `Dirección ${addressIndex} no encontrada. Usa get_addresses para ver las disponibles.`,
     );
 
-  const itemCount = Math.max(raw.items?.length ?? 0, 1);
-  await http.post(
-    `${WWW_BASE_URL}/api/checkout/pub/orderForm/${raw.orderFormId}/attachments/shippingData`,
-    {
-      address,
+  const shippingUrl = `${WWW_BASE_URL}/api/checkout/pub/orderForm/${raw.orderFormId}/attachments/shippingData`;
+  // Step 1: clavar solo la dirección (funciona con carrito vacío)
+  await http.post(shippingUrl, { address });
+  // Step 2: clavar logisticsInfo solo si hay ítems en el carrito
+  const itemCount = raw.items?.length ?? 0;
+  if (itemCount > 0) {
+    await http.post(shippingUrl, {
       logisticsInfo: Array.from({ length: itemCount }, (_, i) => ({
         itemIndex: i,
         selectedSla: "Despacho a Domicilio",
         selectedDeliveryChannel: "delivery",
       })),
-    },
-  );
+    });
+  }
 
   saveSelectedAddress(addressIndex);
   return address;
