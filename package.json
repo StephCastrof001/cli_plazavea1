@@ -37,6 +37,7 @@
     "mcp": "bun run src/mcp/index.ts",
     "server": "bun run server.ts",
     "test": "bun test",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
     "smoke": "bun run scripts/smoke.ts",
     "lint": "biome check src/",
     "lint:fix": "biome check --write src/"
@@ -52,6 +53,7 @@
   "devDependencies": {
     "@biomejs/biome": "^1.9.0",
     "@types/bun": "latest",
-    "tsx": "^4.22.3"
+    "tsx": "^4.22.3",
+    "typescript": "^6.0.3"
   }
 }
