@@ -1,7 +1,7 @@
-﻿{
+{
   "name": "plazavea-cli",
-  "version": "3.1.0",
-  "description": "Servidor MCP para retail VTEX â€” Plaza Vea. CLI + 11 tools para Claude Code, Cursor y cualquier cliente MCP.",
+  "version": "3.2.0",
+  "description": "Servidor MCP para retail VTEX — Plaza Vea. CLI + 13 tools para Claude Code, Cursor y cualquier cliente MCP.",
   "type": "module",
   "license": "MIT",
   "author": "Stephanie Castro",
