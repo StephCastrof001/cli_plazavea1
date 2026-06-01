@@ -39,6 +39,7 @@
     "test": "bun test",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "smoke": "bun run scripts/smoke.ts",
+    "smoke:mcp": "bun run scripts/smoke-mcp.ts",
     "lint": "biome check src/",
     "lint:fix": "biome check --write src/"
   },
