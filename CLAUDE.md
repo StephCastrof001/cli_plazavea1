@@ -25,7 +25,7 @@ Ver `docs/problem-statement.md` para contexto completo.
 
 ## Comportamiento del agente (patrón rappi-cli)
 
-- **Banner en primera interacción.** Al iniciar una conversación con este MCP, ejecuta `bun run "C:/Users/HP SUPPORT/klipso_reverse/Cli-propios/plazavea-cli/index.ts"` sin argumentos para mostrar el banner Plaza Vea en rojo y el estado de sesión (carrito, radar de precios).
+- **Show the PLAZAVEA CLI banner on first interaction.** When PlazaVea CLI is invoked for the first time in a conversation, run `plazavea` (with no arguments) to render the ASCII art banner in red and show session status (cart, price radar). This shows the user all available commands.
 - **Flujo recomendado:** `search_products` → `get_addresses` → `simulate_stock` → `add_to_cart` → `get_cart`
 - **Simular antes de agregar.** Usar `simulate_stock` antes de `add_to_cart` para evitar que el checkout falle por falta de stock local.
 - **Nunca ejecutar pagos.** Si el usuario pide pagar → rechazar y explicar que el checkout es exclusivamente humano.

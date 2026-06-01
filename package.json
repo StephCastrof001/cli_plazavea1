@@ -29,10 +29,10 @@
     "LICENSE"
   ],
   "bin": {
-    "plaza": "./bin/plaza.mjs"
+    "plazavea": "./bin/plaza.mjs"
   },
   "scripts": {
-    "plaza": "bun run index.ts",
+    "plazavea": "bun run index.ts",
     "login": "node node_modules/tsx/dist/cli.mjs src/commands/login.ts",
     "mcp": "bun run src/mcp/server.ts",
     "server": "bun run server.ts",
