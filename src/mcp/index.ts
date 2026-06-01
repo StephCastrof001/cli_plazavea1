@@ -1,5 +1,7 @@
 ﻿import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { spawn } from "node:child_process";
+import path from "node:path";
 import { z } from "zod";
 import { getSelectedAddressIndex, requireAddress, requireSession } from "../config.js";
 import { AppError } from "../http.js";
@@ -44,6 +46,28 @@ function catchErr(e: unknown) {
   const msg = e instanceof AppError ? e.message : e instanceof Error ? e.message : String(e);
   const hint = e instanceof AppError && e.isSessionExpired ? " Ejecuta: plazavea login" : "";
   return fail(`${msg}${hint}`);
+}
+
+// Raíz del repo resuelta dinámicamente (NO hardcodear paths de usuario).
+// src/mcp/index.ts → ../../ = raíz.
+const ROOT = path.resolve(import.meta.dir, "..", "..");
+const TSX = "node_modules/tsx/dist/cli.mjs";
+
+// Lanza un runner Playwright en proceso SEPARADO bajo Node+tsx.
+// ADR-0001: Playwright cuelga bajo Bun; el MCP (Bun) solo hace spawn, no toca Chromium.
+// detached + stdio:"ignore" = no bloquea ni corrompe el stdio JSON-RPC del MCP.
+function launchDetached(script: string): boolean {
+  try {
+    const child = spawn("node", [TSX, script], {
+      cwd: ROOT,
+      detached: true,
+      stdio: "ignore",
+    });
+    child.unref();
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 // ── select_address (Fulfillment Gate) ────────────────────────────────────────
@@ -299,28 +323,63 @@ server.tool(
   },
 );
 
-// ── open_checkout (Browser Handoff Instruction) ──────────────────────────────
-// ADR-0001: Playwright cuelga bajo Bun en Windows — el MCP server no puede
-// lanzar Chromium directamente. La tool devuelve el comando para que el usuario
-// lo ejecute desde su propia terminal (con sesión de escritorio completa).
+// ── open_checkout (Browser Handoff: auto + fallback) ─────────────────────────
+// ADR-0001: Playwright cuelga bajo Bun. auto=true → spawn detached de un runner
+// Node+tsx (no bloquea el MCP). auto=false → devuelve el comando manual.
+// El comando manual SIEMPRE viaja en la respuesta como respaldo.
 server.tool(
   "open_checkout",
-  "PASO 4 — Browser Handoff. Retorna el comando que el usuario debe ejecutar en su terminal para abrir Chromium con las cookies de sesión inyectadas y el carrito precargado. El pago es exclusivamente humano.",
-  {},
-  async () => {
+  "PASO 4 — Browser Handoff (pago). ANTES de invocar esta tool, estás OBLIGADO a preguntarle al usuario: 'El carrito está listo. ¿Quieres que abra el navegador automáticamente por ti (Opción 1), o prefieres que te dé el comando manual (Opción 2)?'. NO invoques esta tool hasta que el usuario elija. Pasa auto=true para Opción 1 (abre el browser con sesión+carrito), auto=false para Opción 2 (comando manual). El pago es exclusivamente humano — este servidor NO ejecuta transacciones.",
+  {
+    auto: z
+      .boolean()
+      .describe(
+        "REQUERIDO. true: abre el navegador automáticamente. false: devuelve el comando manual. Pregunta al usuario qué prefiere ANTES de invocar.",
+      ),
+  },
+  async ({ auto }) => {
     try {
       requireSession();
       requireAddress();
     } catch (e) {
       return catchErr(e);
     }
+    const command = `node ${TSX} src/scripts/handoff.ts`;
+    const launched = auto ? launchDetached("src/scripts/handoff.ts") : false;
     return ok({
       ready: true,
-      message:
-        "Carrito listo. Para abrir la ventana de pago con tu sesión activa, ejecuta este comando en tu PowerShell:",
-      command: "node node_modules/tsx/dist/cli.mjs src/scripts/handoff.ts",
-      cwd: "C:/Users/HP SUPPORT/klipso_reverse/Cli-propios/plazavea-cli",
+      browser_launched: launched,
+      message: launched
+        ? "Navegador abriéndose en tu máquina con tu carrito precargado. Completa el pago ahí."
+        : "Ejecuta este comando en tu PowerShell para abrir el pago con tu sesión activa:",
+      command, // respaldo siempre presente, incluso en modo auto
+      cwd: ROOT,
       note: "El pago es exclusivamente humano. Este servidor NO ejecuta transacciones.",
+    });
+  },
+);
+
+// ── open_login (auto + fallback) ─────────────────────────────────────────────
+server.tool(
+  "open_login",
+  "Inicia sesión en Plaza Vea. ANTES de invocar esta tool, estás OBLIGADO a preguntarle al usuario: '¿Quieres que abra el navegador de login automáticamente por ti (Opción 1), o prefieres que te dé el comando manual (Opción 2)?'. NO invoques esta tool hasta que el usuario elija. Pasa auto=true para Opción 1 (abre el browser de login), auto=false para Opción 2 (comando manual).",
+  {
+    auto: z
+      .boolean()
+      .describe(
+        "REQUERIDO. true: abre el navegador de login automáticamente. false: devuelve el comando manual. Pregunta al usuario qué prefiere ANTES de invocar.",
+      ),
+  },
+  async ({ auto }) => {
+    const command = `node ${TSX} src/commands/login.ts`;
+    const launched = auto ? launchDetached("src/commands/login.ts") : false;
+    return ok({
+      browser_launched: launched,
+      message: launched
+        ? "Navegador de login abriéndose. Inicia sesión en la ventana; la cookie se captura sola."
+        : "Ejecuta este comando en tu PowerShell para iniciar sesión:",
+      command, // respaldo siempre presente
+      cwd: ROOT,
     });
   },
 );
