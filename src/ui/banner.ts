@@ -1,8 +1,8 @@
 import chalk from "chalk";
 
-// Forzar colores ANSI en non-TTY (Claude Code Bash tool, MCP stdio)
-chalk.level = 3;
-
+// Auto-detect nivel de color (patrón rappi-cli) — no forzar chalk.level globalmente
+// En TTY real: chalk detecta truecolor → banner rojo
+// En Bash tool / non-TTY: chalk detecta level=0 → banner plain text, HELP legible
 const pvRed = chalk.hex("#E30613");
 const dim = chalk.dim;
 
