@@ -1,8 +1,10 @@
 ﻿import { chromium } from "playwright";
 import { configExists, getConfig, removeConfig, saveConfig } from "../config.js";
-import { BASE_URL } from "../constants.js";
+import { BASE_URL, WWW_BASE_URL } from "../constants.js";
 
-const CHECKOUT_URL = `${BASE_URL}/checkout/#/cart`;
+// El carrito/checkout vive en www (transaccional), NO en tienda (catálogo).
+// Bug histórico: usaba BASE_URL → abría checkout en host sin carrito → carrito vacío.
+const CHECKOUT_URL = `${WWW_BASE_URL}/checkout/#/cart`;
 
 const LOGIN_URL = `${BASE_URL}/login`;
 const TIMEOUT_MS = 3 * 60 * 1000; // 3 minutos máximo
