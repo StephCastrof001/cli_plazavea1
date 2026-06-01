@@ -49,10 +49,9 @@ const args = process.argv.slice(2);
 const command = args[0];
 
 if (!command) {
-  // Sin args → banner + estado (paridad con rappi/antigravity)
-  const { printBanner, showStatus } = await import("./src/ui/banner.js");
+  // Sin args → banner + help (patrón rappi — sin showStatus para no superar umbral de colapso)
+  const { printBanner } = await import("./src/ui/banner.js");
   printBanner("3.2.0");
-  await showStatus();
   console.log(HELP);
   process.exit(0);
 }
