@@ -15,7 +15,7 @@ const COMMANDS: Record<string, string> = {
   orders:    "src/commands/orders.ts",
   track:     "src/commands/track.ts",
   analytics: "src/commands/analytics.ts",
-  mcp:       "src/mcp/server.ts",
+  mcp:       "src/mcp/index.ts",
 };
 
 const HELP = `

@@ -12,7 +12,7 @@ Ver `docs/problem-statement.md` para contexto completo.
 - Validación: **Zod v4**
 - Linter: **Biome** (`biome check src/`)
 - UI: bloques cligentic en `src/cli/`
-- MCP: `src/mcp/server.ts` — 12 tools (v3.2.0)
+- MCP: `src/mcp/index.ts` — 12 tools (v3.2.0)
 
 ## 🛑 GUARDRAIL DE SEGURIDAD — frontera Humano/IA (INVIOLABLE)
 

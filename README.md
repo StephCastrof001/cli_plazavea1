@@ -122,7 +122,7 @@ Agrega `.mcp.json` a la raíz de tu proyecto:
   "mcpServers": {
     "plaza-vea": {
       "command": "/ruta/completa/a/bun",
-      "args": ["run", "/path/to/plazavea-cli/src/mcp/server.ts"]
+      "args": ["run", "/path/to/plazavea-cli/src/mcp/index.ts"]
     }
   }
 }
@@ -142,7 +142,7 @@ Edita el archivo de configuración de Claude Desktop:
   "mcpServers": {
     "Plaza Vea 🛒": {
       "command": "C:/Users/TU_USUARIO/.bun/bin/bun.exe",
-      "args": ["run", "C:/ruta/completa/a/plazavea-cli/src/mcp/server.ts"]
+      "args": ["run", "C:/ruta/completa/a/plazavea-cli/src/mcp/index.ts"]
     }
   }
 }
@@ -159,7 +159,7 @@ Agrega en `Settings → MCP Servers`:
 {
   "Plaza Vea 🛒": {
     "command": "/ruta/completa/a/bun",
-    "args": ["run", "/ruta/completa/a/plazavea-cli/src/mcp/server.ts"]
+    "args": ["run", "/ruta/completa/a/plazavea-cli/src/mcp/index.ts"]
   }
 }
 ```

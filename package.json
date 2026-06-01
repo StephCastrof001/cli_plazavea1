@@ -1,7 +1,7 @@
-{
+﻿{
   "name": "plazavea-cli",
   "version": "3.1.0",
-  "description": "Servidor MCP para retail VTEX — Plaza Vea. CLI + 11 tools para Claude Code, Cursor y cualquier cliente MCP.",
+  "description": "Servidor MCP para retail VTEX â€” Plaza Vea. CLI + 11 tools para Claude Code, Cursor y cualquier cliente MCP.",
   "type": "module",
   "license": "MIT",
   "author": "Stephanie Castro",
@@ -34,7 +34,7 @@
   "scripts": {
     "plazavea": "bun run index.ts",
     "login": "node node_modules/tsx/dist/cli.mjs src/commands/login.ts",
-    "mcp": "bun run src/mcp/server.ts",
+    "mcp": "bun run src/mcp/index.ts",
     "server": "bun run server.ts",
     "test": "bun test",
     "smoke": "bun run scripts/smoke.ts",

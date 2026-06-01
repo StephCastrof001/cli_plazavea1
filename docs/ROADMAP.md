@@ -36,7 +36,7 @@
   - El MCP NO expone ninguna tool de checkout/pago (verificado: hoy son 9 tools, ninguna de pago) ✅
   - `CLAUDE.md` del proyecto dice en **negrita**: "NUNCA ejecutar pagos. El checkout es exclusivamente humano."
   - `attachPayment` / checkout NO se implementa en v3
-- **🏁 DoD:** regla escrita en CLAUDE.md; `grep -i "payment\|checkout" src/mcp/server.ts` vacío.
+- **🏁 DoD:** regla escrita en CLAUDE.md; `grep -i "payment\|checkout" src/mcp/index.ts` vacío.
 
 ## 🤖 Capa Agent/MCP
 
