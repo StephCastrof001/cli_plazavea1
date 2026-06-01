@@ -80,6 +80,7 @@ interface OrderFormWithShipping {
   orderFormId: string;
   items: Array<{ id: string }>;
   shippingData?: {
+    address?: SavedAddress; // dirección actualmente clavada (Fulfillment Gate)
     availableAddresses?: SavedAddress[];
     logisticsInfo?: Array<{
       itemId: string;
@@ -164,7 +165,9 @@ export function parseSimulateResult(
 export async function simulateStock(skuId: string, addressIndex = 0): Promise<SimulateResult> {
   const raw = await http.get<OrderFormWithShipping>(`${WWW_BASE_URL}${ENDPOINTS.orderForm}`);
   const addresses = raw.shippingData?.availableAddresses ?? [];
-  const address = addresses[addressIndex] ?? null;
+  // Golden Flow: si select_address ya clavó una dirección, usarla (fuente de verdad).
+  // El índice en availableAddresses no es estable entre fetches → solo fallback.
+  const address = raw.shippingData?.address ?? addresses[addressIndex] ?? null;
 
   if (!address)
     throw new Error(
