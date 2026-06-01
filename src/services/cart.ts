@@ -124,9 +124,25 @@ export async function getCheckoutUrl(): Promise<string> {
   return `https://www.plazavea.com.pe/checkout/#/cart?orderFormId=${raw.orderFormId}`;
 }
 
+// Direcciones COMPLETAS (con street) desde el profile, NO desde el orderForm.
+// El orderForm.availableAddresses viene stripped (street:null, neighborhood
+// erróneo) — sirve para listar pero NO para clavar shipping (checkout rechaza
+// "campo calle no válido"). El profile tiene la dirección tal cual la guardó el
+// usuario en la web: street, neighborhood y todo correcto.
+export async function getProfileAddresses(): Promise<SavedAddress[]> {
+  const of = await http.get<{ clientProfileData?: { email?: string } }>(
+    `${WWW_BASE_URL}${ENDPOINTS.orderForm}`,
+  );
+  const email = of.clientProfileData?.email;
+  if (!email) return [];
+  const profile = await http.get<{ availableAddresses?: SavedAddress[] }>(
+    `${WWW_BASE_URL}${ENDPOINTS.profile}?email=${encodeURIComponent(email)}`,
+  );
+  return profile.availableAddresses ?? [];
+}
+
 export async function getAddresses(): Promise<SavedAddress[]> {
-  const raw = await http.get<OrderFormWithShipping>(`${WWW_BASE_URL}${ENDPOINTS.orderForm}`);
-  return raw.shippingData?.availableAddresses ?? [];
+  return getProfileAddresses();
 }
 
 type SlaEntry = { id: string; shippingEstimate: string; polygonName?: string };
@@ -162,16 +178,17 @@ export function parseSimulateResult(
   };
 }
 
-export async function simulateStock(skuId: string, addressIndex = 0): Promise<SimulateResult> {
+export async function simulateStock(skuId: string, addressId: string): Promise<SimulateResult> {
   const raw = await http.get<OrderFormWithShipping>(`${WWW_BASE_URL}${ENDPOINTS.orderForm}`);
-  const addresses = raw.shippingData?.availableAddresses ?? [];
-  // Golden Flow: si select_address ya clavó una dirección, usarla (fuente de verdad).
-  // El índice en availableAddresses no es estable entre fetches → solo fallback.
-  const address = raw.shippingData?.address ?? addresses[addressIndex] ?? null;
+  // Dirección COMPLETA desde profile (con street) — matchear por addressId estable.
+  // Si usáramos orderForm.availableAddresses, street vendría null → attachShipping
+  // clava una dirección sin calle → el checkout rechaza "campo calle no válido".
+  const addresses = await getProfileAddresses();
+  const address = addresses.find((a) => a.addressId === addressId) ?? null;
 
   if (!address)
     throw new Error(
-      "No hay direcciones guardadas en tu cuenta Plaza Vea. Guarda una dirección en la app o web primero.",
+      `Dirección ${addressId} no encontrada. Usa get_addresses para ver las disponibles (con su addressId).`,
     );
 
   // Patrón antigravity: attachShipping con la dirección elegida

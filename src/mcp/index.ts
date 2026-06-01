@@ -305,18 +305,17 @@ server.tool(
 // ── simulate_stock ───────────────────────────────────────────────────────────
 server.tool(
   "simulate_stock",
-  "Verifica si un producto tiene stock en TU local (no el global), usando una dirección guardada. Devuelve disponibilidad, almacén y estimado de entrega. Úsalo ANTES de add_to_cart para evitar que el checkout falle por falta de stock local.",
+  "Verifica si un producto tiene stock en TU local (no el global), para una dirección específica. Devuelve disponibilidad, almacén y estimado de entrega. Llama get_addresses primero y PREGUNTA al usuario qué dirección quiere usar — el stock depende de la dirección elegida. Úsalo ANTES de add_to_cart.",
   {
     skuId: z.string().describe("SKU ID del producto (de search_products)"),
-    addressIndex: z
-      .number()
-      .optional()
-      .describe("Índice de la dirección guardada (default 0). Ver get_addresses."),
+    addressId: z
+      .string()
+      .describe("addressId de la dirección elegida por el usuario (de get_addresses). El stock se calcula para ESA dirección."),
   },
-  async ({ skuId, addressIndex }) => {
+  async ({ skuId, addressId }) => {
     try {
       requireSession();
-      return ok(await simulateStock(skuId, addressIndex ?? 0));
+      return ok(await simulateStock(skuId, addressId));
     } catch (e) {
       return catchErr(e);
     }
@@ -329,7 +328,7 @@ server.tool(
 // El comando manual SIEMPRE viaja en la respuesta como respaldo.
 server.tool(
   "open_checkout",
-  "PASO 4 — Browser Handoff (pago). ANTES de invocar esta tool, estás OBLIGADO a preguntarle al usuario: 'El carrito está listo. ¿Quieres que abra el navegador automáticamente por ti (Opción 1), o prefieres que te dé el comando manual (Opción 2)?'. NO invoques esta tool hasta que el usuario elija. Pasa auto=true para Opción 1 (abre el browser con sesión+carrito), auto=false para Opción 2 (comando manual). El pago es exclusivamente humano — este servidor NO ejecuta transacciones.",
+  "PASO 4 — Browser Handoff (pago). ANTES de invocar, OBLIGATORIO preguntar al usuario: '¿Quieres que abra el navegador automáticamente (te aparece la ventana de pago ya) o prefieres ejecutar el comando desde tu propia terminal?'. Opción 1 = auto=true (abre el browser con sesión+carrito directo). Opción 2 = auto=false (te doy el comando para tu terminal). NO invocar hasta que el usuario elija. El pago es exclusivamente humano — este servidor NO ejecuta transacciones.",
   {
     auto: z
       .boolean()
@@ -362,7 +361,7 @@ server.tool(
 // ── open_login (auto + fallback) ─────────────────────────────────────────────
 server.tool(
   "open_login",
-  "Inicia sesión en Plaza Vea. ANTES de invocar esta tool, estás OBLIGADO a preguntarle al usuario: '¿Quieres que abra el navegador de login automáticamente por ti (Opción 1), o prefieres que te dé el comando manual (Opción 2)?'. NO invoques esta tool hasta que el usuario elija. Pasa auto=true para Opción 1 (abre el browser de login), auto=false para Opción 2 (comando manual).",
+  "Inicia sesión en Plaza Vea. ANTES de invocar, OBLIGATORIO preguntar: '¿Quieres que abra el navegador de login automáticamente (te aparece la ventana ya) o prefieres ejecutar el comando desde tu propia terminal?'. Opción 1 = auto=true. Opción 2 = auto=false (comando para tu terminal). NO invocar hasta que el usuario elija.",
   {
     auto: z
       .boolean()
