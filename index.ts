@@ -1,6 +1,7 @@
 #!/usr/bin/env bun
 import { spawnSync } from "child_process";
 import path from "path";
+import chalk from "chalk";
 
 const COMMANDS: Record<string, string> = {
   login:    "src/commands/login.ts",
@@ -18,31 +19,38 @@ const COMMANDS: Record<string, string> = {
   mcp:       "src/mcp/index.ts",
 };
 
+// Help categorizado + coloreado (patrón rappi/ubereats).
+// chalk auto-detecta TTY: en terminal colorea, en non-TTY (Bash tool) devuelve plano legible.
+const c = chalk.cyan;
+const d = chalk.dim;
+const b = chalk.bold;
+
 const HELP = `
-plazavea-cli v3.2.0 — Plaza Vea desde la terminal + MCP para Claude Code
+${b("Cuenta")}
+  ${c("login")}                          Iniciar sesión (abre browser)
+  ${c("logout")}                         Cerrar sesión
+  ${c("whoami")}                         Estado de sesión y antigüedad
 
-Uso:
-  plazavea <comando> [opciones]
+${b("Compra")}
+  ${c("search")} ${d("<término>")}               Buscar productos ${d("[--limit N] [--output json]")}
+  ${c("buy")} ${d("<término>")}                  Búsqueda interactiva → elegir → agregar ${d("[--limit N]")}
+  ${c("simulate")}                       Verificar stock local ${d("[--sku X] [--address N]")}
+  ${c("add")} ${d("<skuId>")}                    Agregar al carrito ${d("[--quantity N] [--dry-run]")}
+  ${c("remove")} ${d("<índice>")}                Eliminar del carrito ${d("[--dry-run]")}
+  ${c("cart")}                           Ver carrito ${d("[--output json]")}
 
-Comandos:
-  login                          Iniciar sesión (abre browser)
-  logout                         Cerrar sesión
-  whoami                         Estado de sesión y antigüedad
-  search <término>               Buscar productos [--limit N] [--output json]
-  cart                           Ver carrito [--output json]
-  add <skuId>                    Agregar al carrito [--quantity N] [--dry-run]
-  remove <índice>                Eliminar del carrito [--dry-run]
-  buy <término>                  Búsqueda interactiva → seleccionar → add [--limit N]
-  simulate                       Verificar stock local [--sku X] [--address N]
-  orders                         Historial de pedidos [--limit N] [--output json]
-  track <sub>                    Radar de precios (add/list/check/remove/history)
-  analytics                      Gasto por período [--month YYYY-MM] [--top N]
-  mcp                            Iniciar MCP server (stdio) para Claude Code
+${b("Radar & Datos")}
+  ${c("track")} ${d("<sub>")}                    Radar de precios ${d("(add/list/check/remove/history)")}
+  ${c("orders")}                         Historial de pedidos ${d("[--limit N] [--output json]")}
+  ${c("analytics")}                      Gasto por período ${d("[--month YYYY-MM] [--top N]")}
 
-Opciones globales:
-  --output json                  Output en JSON (para scripts y agentes)
-  --dry-run                      Preview sin ejecutar (en add/remove)
-  --help, -h                     Mostrar esta ayuda
+${b("Sistema")}
+  ${c("mcp")}                            Iniciar MCP server ${d("(stdio)")} para Claude Code
+
+${b("Opciones globales")}
+  ${d("--output json")}                  Output en JSON ${d("(scripts y agentes)")}
+  ${d("--dry-run")}                      Preview sin ejecutar ${d("(add/remove)")}
+  ${d("--help, -h")}                     Mostrar esta ayuda
 `;
 
 const args = process.argv.slice(2);
