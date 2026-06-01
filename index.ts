@@ -19,10 +19,10 @@ const COMMANDS: Record<string, string> = {
 };
 
 const HELP = `
-plazavea-cli v3 — Plaza Vea desde la terminal + MCP para Claude Code
+plazavea-cli v3.2.0 — Plaza Vea desde la terminal + MCP para Claude Code
 
 Uso:
-  plaza <comando> [opciones]
+  plazavea <comando> [opciones]
 
 Comandos:
   login                          Iniciar sesión (abre browser)
@@ -51,7 +51,7 @@ const command = args[0];
 if (!command) {
   // Sin args → banner + estado (paridad con rappi/antigravity)
   const { printBanner, showStatus } = await import("./src/ui/banner.js");
-  printBanner("3.1.0");
+  printBanner("3.2.0");
   await showStatus();
   console.log(HELP);
   process.exit(0);

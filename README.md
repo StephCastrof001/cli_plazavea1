@@ -17,7 +17,7 @@ El agente busca, verifica stock en **tu local** y agrega al carrito — sin abri
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue?logo=typescript)
 ![Bun](https://img.shields.io/badge/runtime-Bun-black?logo=bun)
-![MCP](https://img.shields.io/badge/MCP-11%20tools-green)
+![MCP](https://img.shields.io/badge/MCP-13%20tools-green)
 
 </div>
 
@@ -164,7 +164,7 @@ Agrega en `Settings → MCP Servers`:
 }
 ```
 
-### Tools disponibles (11)
+### Tools disponibles (13)
 
 | Tool | Descripción |
 |------|-------------|
@@ -205,7 +205,7 @@ src/
   schemas/           → Zod: product (PriceInfo 3 niveles), cart
   services/          → Lógica: auth (Playwright), products, cart, orders
   commands/          → Un archivo por comando
-  mcp/server.ts      → Servidor MCP (11 tools)
+  mcp/server.ts      → Servidor MCP (13 tools)
 ```
 
 ### Doble host (importante)

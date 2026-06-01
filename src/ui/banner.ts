@@ -1,17 +1,24 @@
-﻿import chalk from "chalk";
+import chalk from "chalk";
+
+// Forzar colores ANSI en non-TTY (Claude Code Bash tool, MCP stdio)
+chalk.level = 3;
 
 const pvRed = chalk.hex("#E30613");
 const dim = chalk.dim;
 
-const ASCII = `
-  ██████  ██       █████  ███████  █████      ██    ██ ███████  █████
-  ██   ██ ██      ██   ██    ███  ██   ██     ██    ██ ██      ██   ██
-  ██████  ██      ███████   ███   ███████     ██    ██ █████   ███████
-  ██      ██      ██   ██  ███    ██   ██      ██  ██  ██      ██   ██
-  ██      ███████ ██   ██ ███████ ██   ██       ████   ███████ ██   ██`;
+// Bloques simples ~70 chars (rappi-cli pattern) — no se trunca en Claude Code
+const ASCII = [
+  "  ██████  ██       █████  ███████  █████      ██    ██ ███████  █████",
+  "  ██   ██ ██      ██   ██    ███  ██   ██     ██    ██ ██      ██   ██",
+  "  ██████  ██      ███████   ███   ███████     ██    ██ █████   ███████",
+  "  ██      ██      ██   ██  ███    ██   ██      ██  ██  ██      ██   ██",
+  "  ██      ███████ ██   ██ ███████ ██   ██       ████   ███████ ██   ██",
+]
+  .map((line) => pvRed(line))
+  .join("\n");
 
 export function printBanner(version?: string) {
-  console.log(pvRed(ASCII));
+  console.log(ASCII);
   if (version) {
     console.log(`\n  ${dim(`v${version}  ·  Servidor MCP para retail VTEX — Plaza Vea`)}`);
   }
