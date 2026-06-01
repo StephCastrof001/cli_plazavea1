@@ -1,22 +1,17 @@
 import chalk from "chalk";
 
-// Forzar colores ANSI en non-TTY (Claude Code Bash tool)
-process.env.FORCE_COLOR = "1";
-
 const pvRed = chalk.hex("#E30613");
 const dim = chalk.dim;
 
-// Bloques simples (estilo rappi-cli) — ancho ~70 chars, no se trunca en Claude Code
 const ASCII = `
-${pvRed("  ██████  ██       █████  ███████  █████      ██    ██ ███████  █████")}
-${pvRed("  ██   ██ ██      ██   ██    ███  ██   ██     ██    ██ ██      ██   ██")}
-${pvRed("  ██████  ██      ███████   ███   ███████     ██    ██ █████   ███████")}
-${pvRed("  ██      ██      ██   ██  ███    ██   ██      ██  ██  ██      ██   ██")}
-${pvRed("  ██      ███████ ██   ██ ███████ ██   ██       ████   ███████ ██   ██")}`;
+  ██████  ██       █████  ███████  █████      ██    ██ ███████  █████
+  ██   ██ ██      ██   ██    ███  ██   ██     ██    ██ ██      ██   ██
+  ██████  ██      ███████   ███   ███████     ██    ██ █████   ███████
+  ██      ██      ██   ██  ███    ██   ██      ██  ██  ██      ██   ██
+  ██      ███████ ██   ██ ███████ ██   ██       ████   ███████ ██   ██`;
 
-// Banner síncrono — sin async, line count predecible (patrón rappi/antigravity)
 export function printBanner(version?: string) {
-  console.log(ASCII);
+  console.log(pvRed(ASCII));
   if (version) {
     console.log(`\n  ${dim(`v${version}  ·  Servidor MCP para retail VTEX — Plaza Vea`)}`);
   }
