@@ -1,4 +1,4 @@
-# Roadmap / Sprint — plazavea-cli
+﻿# Roadmap / Sprint — plazavea-cli
 
 ## Estado actual (v3.1) — verificado en vivo
 
@@ -82,7 +82,7 @@
 
 ### 6. `buy` interactivo — o posponer explícitamente
 - **💼 Negocio:** v2 tiene `buy` (search+add en uno). Mejora UX, ROI medio (search+add ya lo cubren).
-- **✅ Criterios de aceptación:** `plaza buy "arroz"` → lista → elegís → agrega.
+- **✅ Criterios de aceptación:** `plazavea buy "arroz"` → lista → elegís → agrega.
 - **🏁 DoD:** implementado y smoke-tested, O documentado aquí como "pospuesto a propósito" (no limbo).
 
 ---

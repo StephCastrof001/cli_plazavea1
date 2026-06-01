@@ -1,4 +1,4 @@
-# Problem Statement — plazavea-cli
+﻿# Problem Statement — plazavea-cli
 
 ## QUIÉN
 Usuario que compra en Plaza Vea regularmente desde Lima (frecuencia: 1-2x por semana).
@@ -34,14 +34,14 @@ Claude busca  →  verifica stock en TU local ANTES  →  solo agrega lo que sí
 > Claude busca, verifica que hay stock en el local del usuario, y agrega al carrito — sin abrir el browser. **El checkout no falla.**
 
 ```bash
-plaza search "arroz costeño" --output json     # Claude busca
-plaza simulate --sku 10275386 --postal 15094   # verifica stock en TU local (Rímac)
-plaza add 10275386                              # agrega al carrito
-plaza cart                                      # confirma — checkout limpio
+plazavea search "arroz costeño" --output json     # Claude busca
+plazavea simulate --sku 10275386 --postal 15094   # verifica stock en TU local (Rímac)
+plazavea add 10275386                              # agrega al carrito
+plazavea cart                                      # confirma — checkout limpio
 ```
 
 ## DONE WHEN
-`plaza search X` → `plaza simulate --sku X --postal Y` → `plaza add X` → `plaza cart` muestra el ítem — sin abrir el browser. El checkout no falla por stock.
+`plazavea search X` → `plazavea simulate --sku X --postal Y` → `plazavea add X` → `plazavea cart` muestra el ítem — sin abrir el browser. El checkout no falla por stock.
 
 ## BENEFICIOS ADICIONALES (después del AHA moment)
 - **Gasto por período** — "¿cuánto gasté este mes / 3m / 12m?" que la app no muestra

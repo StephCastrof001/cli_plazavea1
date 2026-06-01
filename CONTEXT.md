@@ -1,4 +1,4 @@
-# plazavea-cli — CONTEXT.md (para agentes AI)
+﻿# plazavea-cli — CONTEXT.md (para agentes AI)
 
 ## Qué hace este CLI
 
@@ -20,36 +20,42 @@ Canal bidireccional real entre CLI/MCP y la app móvil.
 ## Flujo típico de uso
 
 ```bash
-plaza login                                    # abre browser, espera login manual
-plaza search "leche gloria" --limit 10         # busca con precios completos
-plaza simulate --sku 123456 --postal 15001     # verifica stock en local antes de agregar
-plaza add 123456 --dry-run                     # preview sin agregar
-plaza add 123456                               # agrega al carrito
-plaza cart                                     # ver carrito con totales
-plaza orders                                   # historial de pedidos
-plaza whoami                                   # estado de sesión + antigüedad cookie
+plazavea login                                    # abre browser, espera login manual
+plazavea search "leche gloria" --limit 10         # busca con precios completos
+plazavea simulate --sku 123456 --postal 15001     # verifica stock en local antes de agregar
+plazavea add 123456 --dry-run                     # preview sin agregar
+plazavea add 123456                               # agrega al carrito
+plazavea cart                                     # ver carrito con totales
+plazavea orders                                   # historial de pedidos
+plazavea whoami                                   # estado de sesión + antigüedad cookie
 ```
 
 ## Output JSON (usar siempre en MCP)
 
 Todos los comandos aceptan `--output json`:
 ```bash
-plaza search "arroz" --output json | jq '.[].prices'
+plazavea search "arroz" --output json | jq '.[].prices'
 ```
 
-## MCP tools disponibles (9 tools — v3.1.0)
+## MCP tools disponibles (13 tools — v3.2.0)
 
-| Tool | Input | Output |
-|---|---|---|
-| `search_products` | `query: string, limit?: number` | `ProductResult[]` |
-| `get_cart` | — | `CartNormalized` |
-| `add_to_cart` | `skuId: string, quantity?: number` | `CartNormalized` |
-| `remove_from_cart` | `index: number` | `CartNormalized` |
-| `get_orders` | `limit?: number` | `Order[]` |
-| `get_analytics` | `month?: string, topN?: number, limit?: number` | `AnalyticsResult` (gasto, top SKUs) |
-| `track_add` | `productId: string, alertPrice?: number` | `TrackedProduct` |
-| `track_list` | — | `TrackedProduct[]` |
-| `track_check` | — | `{ changes, alerts }` |
+Golden Flow (en este orden): `select_address` → `search_products` → `add_to_cart` → `open_checkout`
+
+| Tool | Input | Output | Fase |
+|---|---|---|---|
+| `select_address` | `addressIndex: number` | `{ address, itemCount }` | 1 — Fulfillment Gate (OBLIGATORIO primero) |
+| `get_addresses` | — | `Address[]` | 1 — listar opciones antes de select |
+| `search_products` | `query: string, limit?: number` | `ProductResult[]` | 2 — Búsqueda |
+| `simulate_stock` | `skuId: string, addressIndex?: number` | `StockResult` | 2 — Verificar stock local |
+| `get_cart` | — | `CartNormalized` | 3 — Ver carrito |
+| `add_to_cart` | `skuId: string, quantity?: number` | `CartNormalized` | 3 — Agregar |
+| `remove_from_cart` | `index: number` | `CartNormalized` | 3 — Eliminar |
+| `open_checkout` | — | `{ command: string }` | 4 — Handoff humano (retorna comando PS) |
+| `get_orders` | `limit?: number` | `Order[]` | Post-venta |
+| `get_analytics` | `month?: string, topN?: number, limit?: number` | `AnalyticsResult` | Post-venta |
+| `track_add` | `productId: string, alertPrice?: number` | `TrackedProduct` | Radar |
+| `track_list` | — | `TrackedProduct[]` | Radar |
+| `track_check` | — | `{ changes, alerts }` | Radar |
 
 ## Precios — estructura
 
@@ -65,10 +71,10 @@ Cada producto tiene hasta 3 precios (no siempre aparecen los 3):
 - Sin login: `search` y `cart` (orderForm) responden (semi-públicos)
 - Con login: `orders` y operaciones autenticadas — requiere `VtexIdclientAutCookie`
 - TTL: por confirmar (la cookie VtexId suele durar horas/días, no minutos)
-- Verificar antigüedad: `plaza whoami`
-- Si sesión expirada (401/403): `plaza login` de nuevo
+- Verificar antigüedad: `plazavea whoami`
+- Si sesión expirada (401/403): `plazavea login` de nuevo
 
 ## Nota para agentes — login bajo Node
 
-`plaza login` se ejecuta bajo Node+tsx (no Bun) porque Playwright cuelga bajo Bun en
+`plazavea login` se ejecuta bajo Node+tsx (no Bun) porque Playwright cuelga bajo Bun en
 Windows. El dispatcher lo rutea automático — no requiere acción del agente.

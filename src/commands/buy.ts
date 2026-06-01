@@ -1,6 +1,6 @@
-/**
- * `plaza buy <término>` — búsqueda interactiva → selección → add al carrito
- * Flujo: search → lista numerada → readline → plaza add <skuId>
+﻿/**
+ * `plazavea buy <término>` — búsqueda interactiva → selección → add al carrito
+ * Flujo: search → lista numerada → readline → plazavea add <skuId>
  */
 import { createInterface } from "node:readline";
 import chalk from "chalk";
@@ -33,8 +33,8 @@ async function main() {
   const term = termParts.join(" ");
 
   if (!term) {
-    process.stderr.write(chalk.red("Uso: plaza buy <término> [--limit N]\n"));
-    process.stderr.write(chalk.dim("  Ejemplo: plaza buy arroz costeño\n"));
+    process.stderr.write(chalk.red("Uso: plazavea buy <término> [--limit N]\n"));
+    process.stderr.write(chalk.dim("  Ejemplo: plazavea buy arroz costeño\n"));
     process.exit(1);
   }
 
@@ -101,7 +101,7 @@ async function main() {
           `⚠ ${addedItem.name} en carrito — sin stock local. Verifica antes de pagar:\n`,
         ),
       );
-      process.stderr.write(chalk.dim(`  plaza simulate --sku ${selected.skuId}\n`));
+      process.stderr.write(chalk.dim(`  plazavea simulate --sku ${selected.skuId}\n`));
     } else {
       process.stderr.write(chalk.green(`✔ ${addedItem.name} x${quantity} agregado al carrito.\n`));
     }
@@ -113,7 +113,7 @@ async function main() {
     const msg = e instanceof AppError ? e.message : e instanceof Error ? e.message : String(e);
     process.stderr.write(chalk.red(`✖ ${msg}\n`));
     if (e instanceof AppError && e.isSessionExpired) {
-      process.stderr.write(chalk.dim("  Ejecuta: plaza login\n"));
+      process.stderr.write(chalk.dim("  Ejecuta: plazavea login\n"));
     }
     process.exit(1);
   }

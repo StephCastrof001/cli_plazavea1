@@ -1,4 +1,4 @@
-import chalk from "chalk";
+﻿import chalk from "chalk";
 import { saveConfig } from "../config.js";
 import { AppError } from "../http.js";
 import { loginWithBrowser } from "../services/auth.js";
@@ -16,7 +16,7 @@ async function main() {
       .join(" ")
       .trim();
     if (!raw) {
-      process.stderr.write(chalk.red('Uso: plaza login --manual "name1=val1; name2=val2; ..."\n'));
+      process.stderr.write(chalk.red('Uso: plazavea login --manual "name1=val1; name2=val2; ..."\n'));
       process.stderr.write(chalk.dim("  Copia la línea Cookie: del Network tab de DevTools.\n"));
       process.exit(1);
     }

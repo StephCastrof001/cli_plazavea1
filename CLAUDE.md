@@ -1,4 +1,4 @@
-# plazavea-cli — CLAUDE.md
+﻿# plazavea-cli — CLAUDE.md
 
 CLI + MCP para Plaza Vea (VTEX headless). Canal programático y conversacional que la app no ofrece.
 
@@ -29,7 +29,7 @@ Ver `docs/problem-statement.md` para contexto completo.
 - **Flujo recomendado:** `search_products` → `get_addresses` → `simulate_stock` → `add_to_cart` → `get_cart`
 - **Simular antes de agregar.** Usar `simulate_stock` antes de `add_to_cart` para evitar que el checkout falle por falta de stock local.
 - **Nunca ejecutar pagos.** Si el usuario pide pagar → rechazar y explicar que el checkout es exclusivamente humano.
-- **Sesión expirada.** Si cualquier tool devuelve "Sesión VTEX caducada" → indicar al usuario que ejecute `plaza login`.
+- **Sesión expirada.** Si cualquier tool devuelve "Sesión VTEX caducada" → indicar al usuario que ejecute `plazavea login`.
 - **Estado de pedidos — NUNCA alucinar.** Usar SIEMPRE el campo `statusLabel` de cada orden (calculado desde `VTEX_STATUS_MAP`). PROHIBIDO interpretar el campo `status` crudo como "pendiente" o cualquier otro texto libre. Si `status = "invoiced"` → el pedido está "Facturado / Enviado", NO pendiente. Si el status no está en el mapa → mostrarlo tal cual sin traducir.
 - **Golden Flow — SIEMPRE en este orden:**
   1. `select_address` → clavado del polígono logístico (OBLIGATORIO antes de buscar)
@@ -76,14 +76,14 @@ Si encuentras algo nuevo (endpoint, gotcha, comportamiento inesperado de VTEX):
 
 ### Matriz de Equivalencias del Flujo de Compra
 
-| Fase | AS-IS (PlazaVea.com Web) | TO-BE (CLI `plaza`) | TO-BE (MCP / Claude) | Auth Gate |
+| Fase | AS-IS (PlazaVea.com Web) | TO-BE (CLI `plazavea`) | TO-BE (MCP / Claude) | Auth Gate |
 |---|---|---|---|---|
-| **0. Auth** | Login manual SMS en la web | `plaza login` → Playwright headed (Node+tsx) | Tool `login` → retorna comando PowerShell | `requireSession()` — verifica `VtexIdclientAutCookie` en config |
-| **1. Fulfillment** | Popup "Elige dirección" | `plaza select-address N` | Tool `select_address` | `requireAddress()` — bloqueo fuerte, sin dirección no hay stock real |
-| **2. Búsqueda** | Barra de búsqueda web | `plaza search <query>` | Tool `search_products` | `requireSession()` + `requireAddress()` |
-| **3. Carrito** | Botones "Agregar" + minicarrito | `plaza add` / `plaza remove` / `plaza cart` | Tools `add_to_cart` / `remove_from_cart` / `get_cart` | `requireSession()` — modifica `orderForm` VTEX |
-| **4. Checkout** | Redirect `/checkout/#/cart` + pago manual | `plaza checkout` → Playwright headed (Node+tsx) | Tool `open_checkout` → retorna comando PowerShell | `requireSession()` + `requireAddress()` |
-| **5. Post-venta** | "Mis Pedidos" web | `plaza orders` | Tool `get_orders` | `requireSession()` — solo lectura |
+| **0. Auth** | Login manual SMS en la web | `plazavea login` → Playwright headed (Node+tsx) | Tool `login` → retorna comando PowerShell | `requireSession()` — verifica `VtexIdclientAutCookie` en config |
+| **1. Fulfillment** | Popup "Elige dirección" | `plazavea select-address N` | Tool `select_address` | `requireAddress()` — bloqueo fuerte, sin dirección no hay stock real |
+| **2. Búsqueda** | Barra de búsqueda web | `plazavea search <query>` | Tool `search_products` | `requireSession()` + `requireAddress()` |
+| **3. Carrito** | Botones "Agregar" + minicarrito | `plazavea add` / `plazavea remove` / `plazavea cart` | Tools `add_to_cart` / `remove_from_cart` / `get_cart` | `requireSession()` — modifica `orderForm` VTEX |
+| **4. Checkout** | Redirect `/checkout/#/cart` + pago manual | `plazavea checkout` → Playwright headed (Node+tsx) | Tool `open_checkout` → retorna comando PowerShell | `requireSession()` + `requireAddress()` |
+| **5. Post-venta** | "Mis Pedidos" web | `plazavea orders` | Tool `get_orders` | `requireSession()` — solo lectura |
 
 ### Diagrama de Flujo
 
@@ -97,10 +97,10 @@ graph TD
     end
 
     subgraph TO_BE_CLI ["TO-BE: CLI (Modo Terminal)"]
-        C1[plaza login\nPlaywright Node+tsx] --> C2[plaza select-address N]
-        C2 --> C3[plaza search]
-        C3 --> C4[plaza add]
-        C4 --> C5[plaza checkout\nPlaywright Node+tsx]
+        C1[plazavea login\nPlaywright Node+tsx] --> C2[plazavea select-address N]
+        C2 --> C3[plazavea search]
+        C3 --> C4[plazavea add]
+        C4 --> C5[plazavea checkout\nPlaywright Node+tsx]
     end
 
     subgraph TO_BE_MCP ["TO-BE: MCP (Modo Agente AI)"]

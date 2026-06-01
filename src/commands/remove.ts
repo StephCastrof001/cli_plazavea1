@@ -1,4 +1,4 @@
-import chalk from "chalk";
+﻿import chalk from "chalk";
 import { AppError } from "../http.js";
 import { removeFromCart } from "../services/cart.js";
 
@@ -9,8 +9,8 @@ async function main() {
   const indexStr = args.find((a) => !a.startsWith("--"));
 
   if (!indexStr || Number.isNaN(Number.parseInt(indexStr))) {
-    process.stderr.write(chalk.red("Uso: plaza remove <índice> [--dry-run] [--output json]\n"));
-    process.stderr.write(chalk.dim("  Obtén el índice con: plaza cart\n"));
+    process.stderr.write(chalk.red("Uso: plazavea remove <índice> [--dry-run] [--output json]\n"));
+    process.stderr.write(chalk.dim("  Obtén el índice con: plazavea cart\n"));
     process.exit(1);
   }
 
@@ -35,7 +35,7 @@ async function main() {
     const msg = e instanceof AppError ? e.message : String(e);
     process.stderr.write(chalk.red(`✖ ${msg}\n`));
     if (e instanceof AppError && e.isSessionExpired) {
-      process.stderr.write(chalk.dim("  Ejecuta: plaza login\n"));
+      process.stderr.write(chalk.dim("  Ejecuta: plazavea login\n"));
     }
     process.exit(1);
   }

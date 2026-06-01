@@ -1,4 +1,4 @@
-import { getConfig } from "./config.js";
+﻿import { getConfig } from "./config.js";
 import { BASE_URL, DEFAULT_HEADERS } from "./constants.js";
 
 export class AppError extends Error {
@@ -61,7 +61,7 @@ export async function request<T>(path: string, options: RequestInit = {}): Promi
         const body = await response.text().catch(() => "");
         const expired = isExpiredStatus(response.status);
         const message = expired
-          ? "Sesión VTEX caducada. Ejecuta: plaza login"
+          ? "Sesión VTEX caducada. Ejecuta: plazavea login"
           : parseErrorBody(body) || `HTTP ${response.status}`;
         throw new AppError(message, response.status, expired);
       }

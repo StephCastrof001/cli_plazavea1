@@ -1,4 +1,4 @@
-import chalk from "chalk";
+﻿import chalk from "chalk";
 import { AppError } from "../http.js";
 import { searchProducts } from "../services/products.js";
 
@@ -21,7 +21,7 @@ async function main() {
   const term = termParts.length > 0 ? termParts.join(" ") : undefined;
 
   if (!term) {
-    process.stderr.write(chalk.red("Uso: plaza search <término> [--limit N] [--output json]\n"));
+    process.stderr.write(chalk.red("Uso: plazavea search <término> [--limit N] [--output json]\n"));
     process.exit(1);
   }
 
@@ -69,13 +69,13 @@ async function main() {
     }
 
     process.stdout.write(
-      chalk.dim("\n  Stock ⚠ = global (puede variar por local — usa: plaza simulate)\n"),
+      chalk.dim("\n  Stock ⚠ = global (puede variar por local — usa: plazavea simulate)\n"),
     );
   } catch (e) {
     const msg = e instanceof AppError ? e.message : String(e);
     process.stderr.write(chalk.red(`✖ ${msg}\n`));
     if (e instanceof AppError && e.isSessionExpired) {
-      process.stderr.write(chalk.dim("  Ejecuta: plaza login\n"));
+      process.stderr.write(chalk.dim("  Ejecuta: plazavea login\n"));
     }
     process.exit(1);
   }

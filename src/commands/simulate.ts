@@ -1,4 +1,4 @@
-import chalk from "chalk";
+﻿import chalk from "chalk";
 import { requireSession } from "../config.js";
 import { AppError } from "../http.js";
 import { getAddresses, simulateStock } from "../services/cart.js";
@@ -12,10 +12,10 @@ async function main() {
   requireSession();
 
   if (skuIdx === -1) {
-    process.stderr.write(chalk.red("Uso: plaza simulate --sku <skuId> [--address <índice>]\n"));
-    process.stderr.write(chalk.dim("  Ejemplo: plaza simulate --sku 10275386\n"));
+    process.stderr.write(chalk.red("Uso: plazavea simulate --sku <skuId> [--address <índice>]\n"));
+    process.stderr.write(chalk.dim("  Ejemplo: plazavea simulate --sku 10275386\n"));
     process.stderr.write(
-      chalk.dim("  Para ver tus direcciones: plaza simulate --list-addresses\n"),
+      chalk.dim("  Para ver tus direcciones: plazavea simulate --list-addresses\n"),
     );
     process.exit(1);
   }
@@ -74,7 +74,7 @@ async function main() {
     const msg = e instanceof AppError ? e.message : e instanceof Error ? e.message : String(e);
     process.stderr.write(chalk.red(`✖ ${msg}\n`));
     if (e instanceof AppError && e.isSessionExpired) {
-      process.stderr.write(chalk.dim("  Ejecuta: plaza login\n"));
+      process.stderr.write(chalk.dim("  Ejecuta: plazavea login\n"));
     }
     process.exit(1);
   }

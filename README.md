@@ -1,4 +1,4 @@
-<div align="center">
+﻿<div align="center">
 
 ```
 ██████  ██       █████  ███████  █████      ██    ██ ███████  █████
@@ -30,10 +30,10 @@ La app de Plaza Vea muestra tus órdenes pero no las suma, no las analiza, y no 
 **AHA moment:**
 ```bash
 # Todo esto sin abrir el browser:
-plaza search "arroz costeño" --output json   # buscar con precios reales
-plaza simulate --sku X                        # verificar stock en tu local (usa dirección guardada)
-plaza add X                                   # agregar al carrito
-plaza cart                                    # confirmar
+plazavea search "arroz costeño" --output json   # buscar con precios reales
+plazavea simulate --sku X                        # verificar stock en tu local (usa dirección guardada)
+plazavea add X                                   # agregar al carrito
+plazavea cart                                    # confirmar
 ```
 
 ## Qué hace

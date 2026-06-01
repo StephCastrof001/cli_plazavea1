@@ -1,4 +1,4 @@
-import fs from "node:fs";
+﻿import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { z } from "zod";
@@ -79,12 +79,12 @@ export function configAgeLabel(): string {
 }
 
 export function requireSession(): void {
-  if (!configExists()) throw new Error("Sin sesión activa. Ejecuta: plaza login");
+  if (!configExists()) throw new Error("Sin sesión activa. Ejecuta: plazavea login");
 }
 
 export function requireAddress(): void {
   if (getSelectedAddressIndex() === undefined)
     throw new Error(
-      "Sin dirección seleccionada. Llama select_address primero o ejecuta: plaza select-address N",
+      "Sin dirección seleccionada. Llama select_address primero o ejecuta: plazavea select-address N",
     );
 }

@@ -1,4 +1,4 @@
-import chalk from "chalk";
+﻿import chalk from "chalk";
 import { AppError } from "../http.js";
 import { buildAnalytics, ensureOrderDetails } from "../services/analytics.js";
 import { getOrders } from "../services/orders.js";
@@ -64,7 +64,7 @@ async function main() {
     const msg = e instanceof AppError ? e.message : String(e);
     process.stderr.write(chalk.red(`✖ ${msg}\n`));
     if (e instanceof AppError && e.isSessionExpired) {
-      process.stderr.write(chalk.dim("  Ejecuta: plaza login\n"));
+      process.stderr.write(chalk.dim("  Ejecuta: plazavea login\n"));
     }
     process.exit(1);
   }

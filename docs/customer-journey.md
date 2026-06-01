@@ -1,4 +1,4 @@
-# Customer Journey — Plaza Vea nativo vs CLI/MCP
+﻿# Customer Journey — Plaza Vea nativo vs CLI/MCP
 
 ## El carrito es de la CUENTA, no del browser
 
@@ -37,25 +37,25 @@ no al dispositivo ni al browser.
 
 ```
 1. Claude (o vos en terminal) buscás el producto
-   → plaza search "arroz" --output json
+   → plazavea search "arroz" --output json
 
 2. Claude verifica stock en TU local ANTES de agregar
-   → plaza simulate --sku X --address 1
+   → plazavea simulate --sku X --address 1
    → "Disponible en Rímac — entrega hoy" ← CHECKOUT LIMPIO GARANTIZADO
 
 3. Claude agrega al carrito
-   → plaza add X
+   → plazavea add X
    → aparece en tu app al instante (misma cuenta)
 
 4. Confirmás en terminal o app
-   → plaza cart
+   → plazavea cart
 
 5. (Opcional) Cuánto gasté este mes?
-   → plaza analytics --month 2026-05
+   → plazavea analytics --month 2026-05
    → "S/239 en mayo, tu top: Huevos La Calera x4"
 
 6. (Opcional) ¿Bajó el precio del arroz integral?
-   → plaza track check
+   → plazavea track check
    → "Arroz Integral BELL'S bajó a S/18.90 (alerta: S/19.00) ← alertado"
 ```
 

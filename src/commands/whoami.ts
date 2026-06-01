@@ -1,4 +1,4 @@
-import chalk from "chalk";
+﻿import chalk from "chalk";
 import { CONFIG_PATH, configAge, configAgeLabel, configExists } from "../config.js";
 
 async function main() {
@@ -28,7 +28,7 @@ async function main() {
 
   if (!hasSession) {
     process.stderr.write(chalk.red("✖ Sin sesión activa.\n"));
-    process.stderr.write(chalk.dim("  Ejecuta: plaza login\n"));
+    process.stderr.write(chalk.dim("  Ejecuta: plazavea login\n"));
     process.exit(1);
   }
 
@@ -39,7 +39,7 @@ async function main() {
   if (ttlWarning) {
     process.stderr.write(
       chalk.yellow(
-        "  ⚠ La sesión puede haber expirado (~30 min TTL). Si hay errores, ejecuta: plaza login\n",
+        "  ⚠ La sesión puede haber expirado (~30 min TTL). Si hay errores, ejecuta: plazavea login\n",
       ),
     );
   }

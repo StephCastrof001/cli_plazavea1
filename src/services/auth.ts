@@ -1,4 +1,4 @@
-import { chromium } from "playwright";
+﻿import { chromium } from "playwright";
 import { configExists, getConfig, removeConfig, saveConfig } from "../config.js";
 import { BASE_URL } from "../constants.js";
 
@@ -75,7 +75,7 @@ export async function loginWithBrowser(): Promise<boolean> {
 }
 
 export async function openCheckoutInBrowser(): Promise<void> {
-  if (!configExists()) throw new Error("No hay sesión activa. Ejecuta: plaza login");
+  if (!configExists()) throw new Error("No hay sesión activa. Ejecuta: plazavea login");
 
   const config = getConfig();
 

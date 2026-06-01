@@ -1,4 +1,4 @@
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+﻿import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import { getSelectedAddressIndex, requireAddress, requireSession } from "../config.js";
@@ -42,7 +42,7 @@ function fail(msg: string) {
 
 function catchErr(e: unknown) {
   const msg = e instanceof AppError ? e.message : e instanceof Error ? e.message : String(e);
-  const hint = e instanceof AppError && e.isSessionExpired ? " Ejecuta: plaza login" : "";
+  const hint = e instanceof AppError && e.isSessionExpired ? " Ejecuta: plazavea login" : "";
   return fail(`${msg}${hint}`);
 }
 

@@ -1,4 +1,4 @@
-import chalk from "chalk";
+﻿import chalk from "chalk";
 import { AppError } from "../http.js";
 import { getOrders } from "../services/orders.js";
 
@@ -41,7 +41,7 @@ async function main() {
     const msg = e instanceof AppError ? e.message : String(e);
     process.stderr.write(chalk.red(`✖ ${msg}\n`));
     if (e instanceof AppError && e.isSessionExpired) {
-      process.stderr.write(chalk.dim("  Ejecuta: plaza login\n"));
+      process.stderr.write(chalk.dim("  Ejecuta: plazavea login\n"));
     }
     // orders puede dar 403 — no es error fatal del CLI
     if (e instanceof AppError && e.statusCode === 403) {

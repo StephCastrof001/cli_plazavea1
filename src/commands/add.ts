@@ -1,4 +1,4 @@
-import chalk from "chalk";
+﻿import chalk from "chalk";
 import { requireSession } from "../config.js";
 import { AppError } from "../http.js";
 import { addToCart } from "../services/cart.js";
@@ -14,9 +14,9 @@ async function main() {
 
   if (!skuId) {
     process.stderr.write(
-      chalk.red("Uso: plaza add <skuId> [--quantity N] [--dry-run] [--output json]\n"),
+      chalk.red("Uso: plazavea add <skuId> [--quantity N] [--dry-run] [--output json]\n"),
     );
-    process.stderr.write(chalk.dim("  Obtén el skuId con: plaza search <término>\n"));
+    process.stderr.write(chalk.dim("  Obtén el skuId con: plazavea search <término>\n"));
     process.exit(1);
   }
 
@@ -46,7 +46,7 @@ async function main() {
         chalk.yellow("⚠ Agregado al carrito, pero sin stock en tu local. Fallará al pagar.\n"),
       );
       process.stderr.write(
-        chalk.dim(`  Verifica: plaza simulate --sku ${skuId} --postal <TU_CP>\n`),
+        chalk.dim(`  Verifica: plazavea simulate --sku ${skuId} --postal <TU_CP>\n`),
       );
     } else {
       process.stderr.write(chalk.green(`✔ ${addedItem.name} x${quantity} agregado al carrito.\n`));
@@ -59,7 +59,7 @@ async function main() {
     const msg = e instanceof AppError ? e.message : e instanceof Error ? e.message : String(e);
     process.stderr.write(chalk.red(`✖ ${msg}\n`));
     if (e instanceof AppError && e.isSessionExpired) {
-      process.stderr.write(chalk.dim("  Ejecuta: plaza login\n"));
+      process.stderr.write(chalk.dim("  Ejecuta: plazavea login\n"));
     }
     process.exit(1);
   }

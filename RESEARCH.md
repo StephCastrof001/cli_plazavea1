@@ -1,4 +1,4 @@
-# Plaza Vea (VTEX) — RESEARCH.md
+﻿# Plaza Vea (VTEX) — RESEARCH.md
 
 ## Auth — CONFIRMADO (2026-05-29)
 
@@ -18,7 +18,7 @@
   ```
   El resto del CLI (search/cart/orders/mcp) sigue en Bun — solo el login usa Node.
 - Playwright pineado a `1.59.1` para reusar `chromium-1217` ya en disco (evita descarga).
-- Fallback: `plaza login --manual "<header Cookie completo>"` (pegar desde Network tab de DevTools).
+- Fallback: `plazavea login --manual "<header Cookie completo>"` (pegar desde Network tab de DevTools).
 
 ---
 

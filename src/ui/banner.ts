@@ -1,4 +1,4 @@
-import chalk from "chalk";
+﻿import chalk from "chalk";
 
 const pvRed = chalk.hex("#E30613");
 const dim = chalk.dim;
@@ -27,7 +27,7 @@ export async function showStatus() {
   const loggedIn = getConfig().cookies.length > 0;
 
   if (!loggedIn) {
-    console.log(`  ${chalk.red("Sesión:")}  ✗ Inactiva ${dim("(usa: plaza login)")}\n`);
+    console.log(`  ${chalk.red("Sesión:")}  ✗ Inactiva ${dim("(usa: plazavea login)")}\n`);
     return;
   }
 

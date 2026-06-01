@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Auth Gate — tests de integración
  * Prueba requireSession() y requireAddress() contra el filesystem real.
  * Hace backup/restore del config existente para no destruir la sesión activa.
@@ -39,13 +39,13 @@ describe("requireSession()", () => {
   it("lanza cuando no hay config.json", async () => {
     if (fs.existsSync(CONFIG_PATH)) fs.unlinkSync(CONFIG_PATH);
     const { requireSession } = await import("../src/config.js");
-    expect(() => requireSession()).toThrow("Sin sesión activa. Ejecuta: plaza login");
+    expect(() => requireSession()).toThrow("Sin sesión activa. Ejecuta: plazavea login");
   });
 
   it("lanza cuando config solo tiene cookie anónima (vtex_session)", async () => {
     writeConfig({ cookies: [ANON_COOKIE], savedAt: new Date().toISOString() });
     const { requireSession } = await import("../src/config.js");
-    expect(() => requireSession()).toThrow("Sin sesión activa. Ejecuta: plaza login");
+    expect(() => requireSession()).toThrow("Sin sesión activa. Ejecuta: plazavea login");
   });
 
   it("no lanza cuando config tiene VtexIdclientAutCookie", async () => {

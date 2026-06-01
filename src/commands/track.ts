@@ -1,4 +1,4 @@
-import chalk from "chalk";
+﻿import chalk from "chalk";
 import { trackAdd, trackCheck, trackHistory, trackList, trackRemove } from "../services/tracker.js";
 
 async function main() {
@@ -9,7 +9,7 @@ async function main() {
   if (!sub || sub === "--help") {
     process.stderr.write(
       [
-        chalk.bold("Uso: plaza track <subcomando>"),
+        chalk.bold("Uso: plazavea track <subcomando>"),
         "  add <productId> [--alert S/X]  — seguir precio de un producto",
         "  list                           — productos rastreados",
         "  check                          — refrescar precios y ver cambios",
@@ -25,7 +25,7 @@ async function main() {
     if (sub === "add") {
       const productId = args[1];
       if (!productId) {
-        process.stderr.write(chalk.red("Falta productId. Uso: plaza track add <productId>\n"));
+        process.stderr.write(chalk.red("Falta productId. Uso: plazavea track add <productId>\n"));
         process.exit(1);
       }
       const alertIdx = args.indexOf("--alert");
@@ -52,7 +52,7 @@ async function main() {
       const tracked = trackList();
       if (tracked.length === 0) {
         process.stdout.write(
-          chalk.dim("Sin productos rastreados. Usa: plaza track add <productId>\n"),
+          chalk.dim("Sin productos rastreados. Usa: plazavea track add <productId>\n"),
         );
         return;
       }
