@@ -149,6 +149,9 @@ export function parseSimulateResult(
     return { available: false, slaName: null, shippingEstimate: null, polygon: null, address };
   }
   const sla = entry.slas[0];
+  if (!sla) {
+    return { available: false, slaName: null, shippingEstimate: null, polygon: null, address };
+  }
   return {
     available: true,
     slaName: sla.id,

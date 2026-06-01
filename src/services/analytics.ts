@@ -40,10 +40,12 @@ export async function ensureOrderDetails(
   const missing = orderIds.filter((id) => !cache.details[id]);
 
   for (let i = 0; i < missing.length; i++) {
+    const orderId = missing[i];
+    if (!orderId) continue;
     onProgress?.(i + 1, missing.length);
     try {
-      const detail = await getOrderDetail(missing[i]);
-      cache.details[missing[i]] = detail;
+      const detail = await getOrderDetail(orderId);
+      cache.details[orderId] = detail;
     } catch {
       // skip failed orders — no bloquear todo por uno
     }

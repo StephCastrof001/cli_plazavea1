@@ -1,7 +1,7 @@
 ﻿// Smoke test — openCheckoutInBrowser
-// Uso: bun run src/test-checkout.ts
-import { configExists } from "./config.js";
-import { openCheckoutInBrowser } from "./services/auth.js";
+// Uso: bun run scripts/test-checkout.ts
+import { configExists } from "../src/config.js";
+import { openCheckoutInBrowser } from "../src/services/auth.js";
 
 console.log("=== Smoke Test: openCheckoutInBrowser ===");
 

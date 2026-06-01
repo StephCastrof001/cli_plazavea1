@@ -53,6 +53,7 @@ async function main() {
     console.log();
     for (let i = 0; i < products.length; i++) {
       const p = products[i];
+      if (!p) continue;
       const regular = chalk.white(formatPrice(p.prices.regular));
       const led = p.prices.led ? chalk.yellow(` → ${formatPrice(p.prices.led)}`) : "";
       const oh = p.prices.oh ? chalk.cyan(` OH:${formatPrice(p.prices.oh)}`) : "";

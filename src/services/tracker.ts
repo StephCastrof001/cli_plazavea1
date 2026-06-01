@@ -83,11 +83,14 @@ export async function trackCheck(
       listPrice: current.prices.regular,
     };
 
-    if (!alreadyToday) {
-      store.tracked[tracked.productId].history.push(newEntry);
-    } else {
-      const idx = store.tracked[tracked.productId].history.length - 1;
-      store.tracked[tracked.productId].history[idx] = newEntry;
+    const entry = store.tracked[tracked.productId];
+    if (entry) {
+      if (!alreadyToday) {
+        entry.history.push(newEntry);
+      } else {
+        const idx = entry.history.length - 1;
+        entry.history[idx] = newEntry;
+      }
     }
 
     if (tracked.alert !== undefined && currentPrice <= tracked.alert) {
