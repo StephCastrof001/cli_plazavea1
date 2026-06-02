@@ -94,11 +94,7 @@ interface OrderFormWithShipping {
 // Esto hace que simulate_stock y el carrito usen stock local real desde el inicio.
 export async function selectFulfillmentAddress(addressIndex: number): Promise<SavedAddress> {
   const raw = await http.get<OrderFormWithShipping>(`${WWW_BASE_URL}${ENDPOINTS.orderForm}`);
-  // Dirección COMPLETA desde profile — con street. Si usamos availableAddresses
-  // (orderForm stripped) el checkout rechaza "campo calle no válido".
-  const profileAddrs = await getProfileAddresses();
-  // Resolvemos índice → addressId (el índice del perfil es estable para el usuario)
-  const address = profileAddrs[addressIndex] ?? null;
+  const address = raw.shippingData?.availableAddresses?.[addressIndex] ?? null;
   if (!address)
     throw new Error(
       `Dirección ${addressIndex} no encontrada. Usa get_addresses para ver las disponibles.`,
