@@ -43,7 +43,7 @@ Golden Flow (en este orden): `select_address` → `search_products` → `add_to_
 
 | Tool | Input | Output | Fase |
 |---|---|---|---|
-| `select_address` | `addressIndex: number` | `{ address, itemCount }` | 1 — Fulfillment Gate (OBLIGATORIO primero) |
+| `select_address` | `addressIndex: number` | `{ address, itemCount }` | 1 — Selección de dirección (OBLIGATORIO primero) |
 | `get_addresses` | — | `Address[]` | 1 — listar opciones antes de select |
 | `search_products` | `query: string, limit?: number` | `ProductResult[]` | 2 — Búsqueda |
 | `simulate_stock` | `skuId: string, addressIndex?: number` | `StockResult` | 2 — Verificar stock local |

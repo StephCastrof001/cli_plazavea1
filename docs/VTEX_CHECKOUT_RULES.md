@@ -19,7 +19,7 @@ un carrito vacío → VTEX responde **CHK0041 "Índice de item inválido"**.
 ### 2. Principio del Carrito Lleno
 Si hay items, `address` y `logisticsInfo` van **OBLIGATORIAMENTE en UN solo POST**.
 Mandar `{ address }` y luego `{ logisticsInfo }` en posts separados hace que VTEX
-**borre la calle** (el segundo POST descarta el address clavado).
+**borre la calle** (el segundo POST descarta la dirección guardada).
 → Carrito con items: body = `{ address, logisticsInfo }` juntos, en una llamada.
 
 ### 3. Separación de responsabilidades

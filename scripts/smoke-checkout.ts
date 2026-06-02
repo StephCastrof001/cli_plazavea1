@@ -1,6 +1,6 @@
 // Smoke checkout — máquina de estados VTEX, DINÁMICO (cero hardcode).
 // Descubre las direcciones reales del perfil y valida, para CADA una, que el
-// street que VTEX clava coincide EXACTAMENTE con el street de esa dirección.
+// street que VTEX guarda coincide EXACTAMENTE con el street de esa dirección.
 // Esto prueba genéricamente el bug de índice invertido (Comas/Cercado) sin
 // depender de qué direcciones tenga la cuenta.
 //
@@ -38,11 +38,11 @@ try {
     if (!expected) continue;
     try {
       await selectFulfillmentAddress(i); // carrito vacío → sin CHK0041
-      const clavada = (await readShippingData())?.address?.street ?? "";
-      if (clavada === expected.street && expected.street.trim().length > 0) {
-        ok(`idx ${i}: street clavado == perfil ("${clavada}") — mapeo correcto, sin CHK0041`);
+      const guardada = (await readShippingData())?.address?.street ?? "";
+      if (guardada === expected.street && expected.street.trim().length > 0) {
+        ok(`idx ${i}: street guardado == perfil ("${guardada}") — mapeo correcto, sin CHK0041`);
       } else {
-        ko(`idx ${i}: esperaba "${expected.street}", VTEX clavó "${clavada}"`);
+        ko(`idx ${i}: esperaba "${expected.street}", VTEX guardó "${guardada}"`);
       }
     } catch (e) {
       ko(`idx ${i}: select_address lanzó ${e instanceof Error ? e.message : String(e)}`);

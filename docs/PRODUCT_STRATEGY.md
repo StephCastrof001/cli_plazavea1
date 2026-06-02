@@ -31,7 +31,7 @@ journey
       Checkout tradicional manual: 4, Usuario
       
     section TO-BE (CLI MCP Agentic)
-      Fulfillment Gate (Selección de local): 5, Usuario
+      Selección de dirección (Elegir local): 5, Usuario
       Búsqueda Honesta (Simulación invisible): 5, Agente IA
       Tabla Comparativa de Precios (Cero carga cognitiva): 5, Agente IA
       Checkout Seguro (Magic Link): 5, Usuario
@@ -46,8 +46,8 @@ Para garantizar una experiencia superior, el MCP implementa un flujo estricto y 
 ### 1. Autenticación Híbrida Blindada
 La API de VTEX separa la sesión de navegación del carrito. El MCP utiliza **Playwright** en background para inicializar el storefront real y robar la cookie `checkout.vtex.com`, garantizando que el `orderFormId` del CLI sea el mismo que el del navegador web del usuario.
 
-### 2. Fulfillment Gate (Adiós al Bait & Switch)
-Ninguna búsqueda ocurre en el vacío. Antes de permitir explorar el catálogo, el MCP exige al usuario seleccionar una de sus direcciones guardadas (vía `/api/checkout/pub/profiles`). Esto hace un POST inmediato a `shippingData`, "clavando" el polígono logístico. A partir de ese momento, el stock es 100% real.
+### 2. Selección de dirección (Adiós al Bait & Switch)
+Ninguna búsqueda ocurre en el vacío. Antes de permitir explorar el catálogo, el MCP exige al usuario seleccionar una de sus direcciones guardadas (vía `/api/checkout/pub/profiles`). Esto hace un POST inmediato a `shippingData`, registrando la dirección de envío. A partir de ese momento, el stock es 100% real.
 
 ### 3. Búsqueda Honesta (Silent Simulation)
 En lugar de mostrar resultados crudos del catálogo global, el MCP actúa como un *Personal Shopper*. Ejecuta llamadas invisibles a `simulate_stock` en el background. Si un producto no tiene stock en el polígono del usuario, la IA lo descarta automáticamente antes de mostrarlo en pantalla.

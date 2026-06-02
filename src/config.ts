@@ -17,7 +17,7 @@ const CookieSchema = z.object({
 const ConfigSchema = z.object({
   cookies: z.array(CookieSchema).default([]),
   savedAt: z.string().optional(),
-  selectedAddressIndex: z.number().optional(), // Fulfillment Gate — dirección activa
+  selectedAddressIndex: z.number().optional(), // Selección de dirección — dirección activa
 });
 
 export type Config = z.infer<typeof ConfigSchema>;

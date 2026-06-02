@@ -20,7 +20,7 @@ const server = new McpServer({
     "Servidor MCP para retail VTEX — Plaza Vea (Perú).",
     "",
     "Golden Flow (SIEMPRE en este orden):",
-    "1. select_address   → Fulfillment Gate: clava el polígono logístico",
+    "1. select_address   → Selección de dirección: guarda tu dirección de envío",
     "2. search_products  → Búsqueda Honesta: solo resultados con stock global",
     "3. add_to_cart      → Agrega al carrito (bindea perfil automáticamente)",
     "4. open_checkout    → Abre browser con carrito precargado para pago humano",
@@ -65,7 +65,7 @@ function launchDetached(script: string): boolean {
   }
 }
 
-// ── select_address (Fulfillment Gate) ────────────────────────────────────────
+// ── select_address (Selección de dirección) ─────────────────────────────────
 server.tool(
   "select_address",
   "ESTADO 1 — Anclaje Logístico. SOLO ancla la ubicación; NO valida stock (eso es simulate_stock, Estado 3). Llama get_addresses, muestra las opciones al usuario y PREGUNTA cuál prefiere ANTES de invocar. NO asumas ni elijas solo. Una vez el usuario elija, ancla esa dirección en el orderForm (funciona con carrito vacío — Híbrido Inteligente). Las búsquedas posteriores ya saben la ubicación.",
@@ -79,7 +79,7 @@ server.tool(
       return ok({
         selected: true,
         address,
-        message: `Polígono logístico clavado en ${address.neighborhood}, ${address.city}. Ahora puedes buscar con stock local real.`,
+        message: `Dirección de envío guardada: ${address.neighborhood}, ${address.city}. Ahora puedes buscar con stock local real.`,
       });
     } catch (e) {
       return catchErr(e);
@@ -92,7 +92,7 @@ server.tool(
   "search_products",
   [
     "PASO 2 — Búsqueda Honesta. Busca productos filtrando los sin stock global.",
-    "IMPORTANTE: Requiere haber llamado select_address primero (Fulfillment Gate).",
+    "IMPORTANTE: Requiere haber llamado select_address primero (Selección de dirección).",
     "Si no hay dirección seleccionada, retorna error con instrucción.",
     "Muestra resultados SIEMPRE en tabla de 4 columnas:",
     "| Producto | Precio Lista | Precio Online | Precio Tarjeta OH! |",

@@ -10,7 +10,7 @@ import { type SavedAddress, attachShipping, readOrderForm } from "./shipping.js"
 
 // Direcciones COMPLETAS (con street) desde el profile, NO desde el orderForm.
 // orderForm.availableAddresses viene stripped (street:null, orden distinto) — sirve
-// para listar pero NO para clavar shipping (checkout rechaza "campo calle no válido").
+// para listar pero NO para registrar el envío (checkout rechaza "campo calle no válido").
 // El profile tiene la dirección tal cual la guardó el usuario: street, neighborhood, todo.
 export async function getProfileAddresses(): Promise<SavedAddress[]> {
   const of = await http.get<{ clientProfileData?: { email?: string } }>(

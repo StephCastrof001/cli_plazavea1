@@ -19,7 +19,7 @@ export interface SavedAddress {
 }
 
 export interface ShippingState {
-  address?: SavedAddress; // dirección actualmente clavada (Fulfillment Gate)
+  address?: SavedAddress; // dirección de envío actualmente guardada (Selección de dirección)
   availableAddresses?: SavedAddress[];
   logisticsInfo?: Array<{
     itemId: string;
@@ -34,7 +34,7 @@ export interface OrderFormWithShipping {
   shippingData?: ShippingState;
 }
 
-// Híbrido Inteligente — la ÚNICA forma correcta de clavar shipping en VTEX.
+// Híbrido Inteligente — la ÚNICA forma correcta de registrar el envío en VTEX.
 //   - itemCount === 0 → body { address } solo. logisticsInfo referenciaría
 //     itemIndex:0 inexistente → CHK0041. (Principio del Carrito Vacío.)
 //   - itemCount  >  0 → body { address, logisticsInfo } JUNTOS en un POST.
@@ -67,7 +67,7 @@ export async function readOrderForm(): Promise<OrderFormWithShipping> {
   return http.get<OrderFormWithShipping>(`${WWW_BASE_URL}${ENDPOINTS.orderForm}`);
 }
 
-// Lee solo el estado de shipping actualmente clavado.
+// Lee solo el estado de envío actualmente guardado.
 export async function readShippingData(): Promise<ShippingState | undefined> {
   const of = await readOrderForm();
   return of.shippingData;
