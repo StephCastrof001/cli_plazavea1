@@ -1,7 +1,8 @@
 ﻿import chalk from "chalk";
 import { requireSession } from "../config.js";
 import { AppError } from "../http.js";
-import { getAddresses, simulateStock } from "../services/cart.js";
+import { getAddresses } from "../services/address.js";
+import { simulateStock } from "../services/fulfillment.js";
 
 async function main() {
   const args = process.argv.slice(2);

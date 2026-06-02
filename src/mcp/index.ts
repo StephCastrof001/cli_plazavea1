@@ -6,14 +6,9 @@ import { z } from "zod";
 import { getSelectedAddressIndex, requireAddress, requireSession } from "../config.js";
 import { AppError } from "../http.js";
 import { buildAnalytics, ensureOrderDetails } from "../services/analytics.js";
-import {
-  addToCart,
-  getAddresses,
-  getCart,
-  removeFromCart,
-  selectFulfillmentAddress,
-  simulateStock,
-} from "../services/cart.js";
+import { getAddresses, selectFulfillmentAddress } from "../services/address.js";
+import { addToCart, getCart, removeFromCart } from "../services/cart.js";
+import { assertCheckoutReady, simulateStock } from "../services/fulfillment.js";
 import { getOrders } from "../services/orders.js";
 import { searchProducts } from "../services/products.js";
 import { trackAdd, trackCheck, trackList } from "../services/tracker.js";
@@ -73,7 +68,7 @@ function launchDetached(script: string): boolean {
 // ── select_address (Fulfillment Gate) ────────────────────────────────────────
 server.tool(
   "select_address",
-  "PASO 1 OBLIGATORIO — Fulfillment Gate. Llama get_addresses, muestra las opciones al usuario y PREGUNTA cuál prefiere ANTES de invocar esta tool. NO asumas ni elijas solo. Una vez el usuario elija, clava esa dirección en el orderForm — el stock será 100% real para su local.",
+  "ESTADO 1 — Anclaje Logístico. SOLO ancla la ubicación; NO valida stock (eso es simulate_stock, Estado 3). Llama get_addresses, muestra las opciones al usuario y PREGUNTA cuál prefiere ANTES de invocar. NO asumas ni elijas solo. Una vez el usuario elija, ancla esa dirección en el orderForm (funciona con carrito vacío — Híbrido Inteligente). Las búsquedas posteriores ya saben la ubicación.",
   {
     addressIndex: z.number().describe("Índice de la dirección (0-based, de get_addresses)"),
   },
@@ -305,7 +300,7 @@ server.tool(
 // ── simulate_stock ───────────────────────────────────────────────────────────
 server.tool(
   "simulate_stock",
-  "Verifica si un producto tiene stock en TU local (no el global), para una dirección específica. Devuelve disponibilidad, almacén y estimado de entrega. Llama get_addresses primero y PREGUNTA al usuario qué dirección quiere usar — el stock depende de la dirección elegida. Úsalo ANTES de add_to_cart.",
+  "ESTADO 3 — Conciliación Logística. Punto de control DESPUÉS de add_to_cart (el SKU debe estar en el carrito). Reconcilia el shipping para todos los items y verifica si el producto tiene stock en TU local (no el global) para la dirección elegida. Devuelve disponibilidad, almacén y estimado. Llama get_addresses y PREGUNTA al usuario qué dirección — el stock depende de ella. OBLIGATORIO antes de open_checkout (Estado 4).",
   {
     skuId: z.string().describe("SKU ID del producto (de search_products)"),
     addressId: z
@@ -328,7 +323,7 @@ server.tool(
 // El comando manual SIEMPRE viaja en la respuesta como respaldo.
 server.tool(
   "open_checkout",
-  "PASO 4 — Browser Handoff (pago). ANTES de invocar, OBLIGATORIO preguntar al usuario: '¿Quieres que abra el navegador automáticamente (te aparece la ventana de pago ya) o prefieres ejecutar el comando desde tu propia terminal?'. Opción 1 = auto=true (abre el browser con sesión+carrito directo). Opción 2 = auto=false (te doy el comando para tu terminal). NO invocar hasta que el usuario elija. El pago es exclusivamente humano — este servidor NO ejecuta transacciones.",
+  "ESTADO 4 — Zero-Click Handoff. REQUIERE haber pasado Estado 3 (simulate_stock) — si la logística no está reconciliada, esta tool FALLA con instrucción. OBLIGATORIO presentar al usuario sus DOS opciones como elección (no asumas ninguna, no colapses a una sola): (A) auto=true → abro el navegador en tu máquina con sesión+carrito ya cargados; (B) auto=false → te doy el comando para que lo pegues en tu propia terminal. AMBAS son seguras y respetan el guardrail: en las dos el browser abre y TÚ pagas — el servidor NUNCA ejecuta el pago ni toca paymentData. El guardrail prohíbe pagar, NO prohíbe abrir el navegador. NO invocar hasta que el usuario elija A o B.",
   {
     auto: z
       .boolean()
@@ -340,6 +335,8 @@ server.tool(
     try {
       requireSession();
       requireAddress();
+      // ESTADO 4 gate — no abrir el pago si no se reconcilió la logística (Estado 3).
+      await assertCheckoutReady();
     } catch (e) {
       return catchErr(e);
     }

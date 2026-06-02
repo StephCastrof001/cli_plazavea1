@@ -34,11 +34,11 @@ Ver `docs/problem-statement.md` para contexto completo.
 - **Nunca ejecutar pagos.** Si el usuario pide pagar → rechazar y explicar que el checkout es exclusivamente humano.
 - **Sesión expirada.** Si cualquier tool devuelve "Sesión VTEX caducada" → indicar al usuario que ejecute `plazavea login`.
 - **Estado de pedidos — NUNCA alucinar.** Usar SIEMPRE el campo `statusLabel` de cada orden (calculado desde `VTEX_STATUS_MAP`). PROHIBIDO interpretar el campo `status` crudo como "pendiente" o cualquier otro texto libre. Si `status = "invoiced"` → el pedido está "Facturado / Enviado", NO pendiente. Si el status no está en el mapa → mostrarlo tal cual sin traducir.
-- **Golden Flow — SIEMPRE en este orden:**
-  1. `select_address` → clavado del polígono logístico (OBLIGATORIO antes de buscar)
-  2. `search_products` → tabla de 4 columnas (ver formato abajo)
-  3. `add_to_cart` → agregar productos
-  4. `open_checkout` → retorna comando PowerShell para que el usuario abra el browser
+- **Máquina de 4 estados (Contrato: `docs/VTEX_CHECKOUT_RULES.md`) — SIEMPRE en orden:**
+  1. **Estado 1** `select_address` → ancla la ubicación (solo ancla, no valida stock). Funciona con carrito vacío.
+  2. **Estado 2** `search_products` (tabla 4 cols) + `add_to_cart` → arma el pedido. PROHIBIDO tocar envío aquí.
+  3. **Estado 3** `simulate_stock` → reconcilia logística y valida stock local. DESPUÉS de add. OBLIGATORIO antes de checkout.
+  4. **Estado 4** `open_checkout` → handoff. FALLA si no pasó Estado 3. Presentar al usuario sus 2 opciones (ver abajo).
 - **Formato de búsqueda — SIEMPRE tabla de 4 columnas:**
   ```
   | Producto | Precio Lista | Precio Online | Precio Tarjeta OH! |
@@ -46,7 +46,7 @@ Ver `docs/problem-statement.md` para contexto completo.
   | Arroz COSTEÑO 5kg | S/ 25.90 | S/ 21.90 | S/ 18.90 |
   ```
   Usar `-` si un precio no aplica. NUNCA usar la palabra "LED" — el término correcto es "Precio Online".
-- **Checkout Handoff — al finalizar compra:** Llamar `open_checkout`. La tool retorna el comando exacto. Mostrarlo al usuario para que lo pegue en su PowerShell. NUNCA intentar ejecutar el pago tú mismo.
+- **Checkout Handoff — al finalizar compra:** OBLIGATORIO ofrecer al usuario sus DOS opciones (no asumir ni colapsar a una): **(A)** abro el navegador automáticamente en tu máquina (`auto=true`), o **(B)** te doy el comando para tu propia terminal (`auto=false`). AMBAS respetan el guardrail: el browser abre y el usuario paga — el servidor NUNCA ejecuta el pago. El guardrail prohíbe PAGAR, no prohíbe abrir el navegador. Recién con la elección del usuario, llamar `open_checkout`.
 
 ## Reglas arquitectónicas
 
