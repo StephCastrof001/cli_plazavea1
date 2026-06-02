@@ -32,7 +32,7 @@ journey
       
     section TO-BE (CLI MCP Agentic)
       Selección de dirección (Elegir local): 5, Usuario
-      Búsqueda Honesta (Simulación invisible): 5, Agente IA
+      Búsqueda global + simulate confirma local: 5, Agente IA
       Tabla Comparativa de Precios (Cero carga cognitiva): 5, Agente IA
       Checkout Seguro (Magic Link): 5, Usuario
 ```
@@ -49,8 +49,8 @@ La API de VTEX separa la sesión de navegación del carrito. El MCP utiliza **Pl
 ### 2. Selección de dirección (Adiós al Bait & Switch)
 Ninguna búsqueda ocurre en el vacío. Antes de permitir explorar el catálogo, el MCP exige al usuario seleccionar una de sus direcciones guardadas (vía `/api/checkout/pub/profiles`). Esto hace un POST inmediato a `shippingData`, registrando la dirección de envío. A partir de ese momento, el stock es 100% real.
 
-### 3. Búsqueda Honesta (Silent Simulation)
-En lugar de mostrar resultados crudos del catálogo global, el MCP actúa como un *Personal Shopper*. Ejecuta llamadas invisibles a `simulate_stock` en el background. Si un producto no tiene stock en el polígono del usuario, la IA lo descarta automáticamente antes de mostrarlo en pantalla.
+### 3. Búsqueda global + confirmación local (simulate)
+El search de plazavea es **global por diseño** (catálogo cacheado en CDN, no regionalizable — ver `docs/VTEX_SEARCH_REGIONALIZATION.md`). `search_products` filtra los productos sin stock global y devuelve el catálogo disponible. La verificación del stock en el **local del usuario** la hace `simulate_stock` (vía orderForm), que es el único punto donde VTEX expone disponibilidad por región. Flujo: el usuario busca (global) → `simulate_stock` confirma que el producto llega a SU local antes de agregar → el checkout no falla por stock.
 
 ### 4. UI Estricta y Prevención de Alucinaciones
 Se le prohíbe al LLM inventar formatos o términos (ej. alucinar "Precio LED"). Se fuerza mediante prompt una matriz estricta de 4 columnas para eliminar la carga cognitiva del usuario:

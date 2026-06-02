@@ -79,7 +79,7 @@ server.tool(
       return ok({
         selected: true,
         address,
-        message: `Dirección de envío guardada: ${address.neighborhood}, ${address.city}. Ahora puedes buscar con stock local real.`,
+        message: `Dirección de envío guardada: ${address.neighborhood}, ${address.city}. El search muestra stock global; usa simulate_stock para confirmar disponibilidad en tu local antes de agregar.`,
       });
     } catch (e) {
       return catchErr(e);
