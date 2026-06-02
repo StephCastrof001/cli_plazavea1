@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { parseSimulateResult } from "../../src/services/cart.js";
+import { parseSimulateResult } from "../../src/services/fulfillment.js";
 
 const MOCK_ADDRESS = {
   addressId: "addr-1",

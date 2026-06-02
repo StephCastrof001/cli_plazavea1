@@ -1,66 +1,76 @@
-// Smoke checkout — guarda contra el bug "campo calle no válido".
-// Valida que las direcciones tengan street COMPLETO (fuente profile, no orderForm)
-// y que la dirección clavada por simulate sea válida para checkout.
+// Smoke checkout — máquina de estados VTEX, DINÁMICO (cero hardcode).
+// Descubre las direcciones reales del perfil y valida, para CADA una, que el
+// street que VTEX clava coincide EXACTAMENTE con el street de esa dirección.
+// Esto prueba genéricamente el bug de índice invertido (Comas/Cercado) sin
+// depender de qué direcciones tenga la cuenta.
 //
-// Uso: bun run scripts/smoke-checkout.ts
-import { WWW_BASE_URL, ENDPOINTS } from "../src/constants.js";
-import { http } from "../src/http.js";
-import { getAddresses, selectFulfillmentAddress, simulateStock } from "../src/services/cart.js";
+// Uso: bun run scripts/smoke-checkout.ts   (requiere sesión viva: plazavea login)
+import { getAddresses, selectFulfillmentAddress } from "../src/services/address.js";
+import { assertCheckoutReady, simulateStock } from "../src/services/fulfillment.js";
+import { readShippingData } from "../src/services/shipping.js";
+import { searchProducts } from "../src/services/products.js";
 
 let pass = 0;
 let fail = 0;
-const ok = (m: string) => { console.log(`  ✔ ${m}`); pass++; };
-const ko = (m: string) => { console.error(`  ✖ ${m}`); fail++; };
+const ok = (m: string) => {
+  console.log(`  ✔ ${m}`);
+  pass++;
+};
+const ko = (m: string) => {
+  console.error(`  ✖ ${m}`);
+  fail++;
+};
 
-console.log("=== Smoke Checkout (regresión campo calle) ===\n");
+console.log("=== Smoke Checkout — máquina de estados VTEX (dinámico) ===\n");
 
 try {
-  // 1. getAddresses (profile) → cada dirección con street no vacío
+  // ── Estado 1: anclaje. Validar índice→street para CADA dirección real ──────
+  // (carrito vacío al inicio → confirma además que NO hay CHK0041)
   const addrs = await getAddresses();
-  if (addrs.length > 0) ok(`getAddresses devuelve ${addrs.length} direcciones`);
-  else ko("getAddresses vacío");
-
-  const conStreet = addrs.filter((a) => a.street && a.street.trim().length > 0);
-  if (conStreet.length === addrs.length && addrs.length > 0)
-    ok("todas las direcciones tienen street (fuente profile, no orderForm stripped)");
-  else ko(`${addrs.length - conStreet.length} direcciones SIN street → checkout rechazaría`);
-
-  // 1.5 PATH SIN SIMULATE — el agente puede ir select_address → add → checkout
-  // saltándose simulate_stock. selectFulfillmentAddress debe clavar street COMPLETO
-  // por sí solo, no depender de que simulate sobreescriba después. Este check
-  // cierra el blind spot: antes el test corría simulate primero y nunca veía el
-  // path roto donde selectFulfillment clavaba street:null.
-  if (addrs.length > 0) {
-    await selectFulfillmentAddress(0);
-    const afterSelect = await http.get<{ shippingData?: { address?: { street?: string | null } } }>(
-      `${WWW_BASE_URL}${ENDPOINTS.orderForm}`,
-    );
-    const clavadaSelect = afterSelect.shippingData?.address?.street;
-    if (clavadaSelect && clavadaSelect.trim().length > 0)
-      ok(`select_address clava street SIN simulate ("${clavadaSelect}") — path directo a checkout OK`);
-    else ko("select_address clava street:null → checkout falla si el usuario salta simulate");
+  if (addrs.length === 0) {
+    ko("getAddresses vacío — no hay direcciones que probar");
+  } else {
+    ok(`getAddresses devuelve ${addrs.length} direcciones (fuente profile)`);
   }
 
-  // 2. simular un item del carrito → la dirección resuelta tiene street
-  const of = await http.get<{ items?: Array<{ id: string }> }>(`${WWW_BASE_URL}${ENDPOINTS.orderForm}`);
-  const item = of.items?.[0];
-  const target = addrs[0];
-  if (item && target) {
-    const r = await simulateStock(item.id, target.addressId);
-    if (r.address?.street && r.address.street.trim().length > 0)
-      ok(`simulate devuelve dirección con street ("${r.address.street}")`);
-    else ko("simulate devolvió dirección sin street");
+  for (let i = 0; i < addrs.length; i++) {
+    const expected = addrs[i];
+    if (!expected) continue;
+    try {
+      await selectFulfillmentAddress(i); // carrito vacío → sin CHK0041
+      const clavada = (await readShippingData())?.address?.street ?? "";
+      if (clavada === expected.street && expected.street.trim().length > 0) {
+        ok(`idx ${i}: street clavado == perfil ("${clavada}") — mapeo correcto, sin CHK0041`);
+      } else {
+        ko(`idx ${i}: esperaba "${expected.street}", VTEX clavó "${clavada}"`);
+      }
+    } catch (e) {
+      ko(`idx ${i}: select_address lanzó ${e instanceof Error ? e.message : String(e)}`);
+    }
+  }
 
-    // 3. la dirección CLAVADA (la que valida el pago) tiene street
-    const after = await http.get<{ shippingData?: { address?: { street?: string | null } } }>(
-      `${WWW_BASE_URL}${ENDPOINTS.orderForm}`,
-    );
-    const clavada = after.shippingData?.address?.street;
-    if (clavada && clavada.trim().length > 0)
-      ok(`shippingData clavada tiene street ("${clavada}") — checkout no rechaza`);
-    else ko("shippingData clavada SIN street → 'campo calle no válido' en pago");
-  } else {
-    console.log("  (carrito vacío o sin direcciones — paso simulate omitido)");
+  // ── Estados 2+3: agregar item dinámico → simular → checkout-ready ──────────
+  const target = addrs[0];
+  if (target) {
+    const results = await searchProducts("arroz", 5);
+    const sku = results.find((p) => p.inStock)?.skuId ?? results[0]?.skuId;
+    if (!sku) {
+      console.log("  (search sin resultados — paso items omitido)");
+    } else {
+      const { addToCart } = await import("../src/services/cart.js");
+      await addToCart(sku, 1); // Estado 2
+      const sim = await simulateStock(sku, target.addressId); // Estado 3
+      if (sim.address?.street === target.street && target.street.trim().length > 0)
+        ok(`simulate reconcilia con street del perfil ("${sim.address?.street}")`);
+      else ko(`simulate street "${sim.address?.street}" != perfil "${target.street}"`);
+
+      try {
+        await assertCheckoutReady(); // Estado 4 gate
+        ok("assertCheckoutReady pasa — logística reconciliada, listo para handoff");
+      } catch (e) {
+        ko(`assertCheckoutReady falló: ${e instanceof Error ? e.message : String(e)}`);
+      }
+    }
   }
 } catch (e) {
   ko(`excepción: ${e instanceof Error ? e.message : String(e)}`);
