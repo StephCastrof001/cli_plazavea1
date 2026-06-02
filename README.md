@@ -10,7 +10,7 @@
 
 **Servidor MCP para retail VTEX** · v3.2.0
 
-Opera tus compras de supermercado desde Claude Code o Cursor.<br>
+Opera tus compras de supermercado desde **cualquier cliente MCP** (Claude Code, Cursor, etc.) o por CLI.<br>
 El agente busca, confirma con `simulate_stock` que el producto llega a **tu local**, y agrega al carrito — sin abrir el browser.<br>
 <sub>Primera implementación: Plaza Vea (Perú). Arquitectura VTEX → portable a Wong, Tottus, Vivanda.</sub>
 
@@ -27,13 +27,18 @@ El agente busca, confirma con `simulate_stock` que el producto llega a **tu loca
 
 La app de Plaza Vea muestra tus órdenes pero no las suma, no las analiza, y no hay forma de que un agente AI opere tus compras. Este CLI crea ese canal.
 
-**AHA moment:**
+**AHA moment:** Le pides a tu agente *"agrega leche Gloria para mi casa en Comas"*.
+Busca, simula el stock en **tu local**, y descubre que en Comas no hay — aunque la web
+la muestre "disponible". Te avisa **antes** de agregarla, en vez de que el checkout
+falle al final. Ni la app ni la web hacen eso.
+
 ```bash
-# Todo esto sin abrir el browser:
-plazavea search "arroz costeño" --output json   # buscar con precios reales
-plazavea simulate --sku X                        # verificar stock en tu local (usa dirección guardada)
-plazavea add X                                   # agregar al carrito
-plazavea cart                                    # confirmar
+# Lo mismo desde tu terminal (o vía MCP), sin abrir el browser:
+plazavea select-address 0                      # tu local: Comas
+plazavea search "leche gloria"                 # catálogo + precios reales
+plazavea simulate --sku 11389962               # ✖ sin stock en Comas (la web diría "disponible")
+plazavea simulate --sku 11389962 --address 1   # ✔ sí hay en Cercado
+# Agregas solo lo que tu local sí tiene → el checkout no falla.
 ```
 
 ## Qué hace
@@ -48,8 +53,7 @@ plazavea cart                                    # confirmar
 ## Flujo (máquina de 4 estados)
 
 VTEX no es un CRUD simple: es una máquina de estados. El flujo está dividido en 4 estados
-estrictos para evitar errores cíclicos (CHK0041, pérdida de calle). Contrato completo en
-[`docs/VTEX_CHECKOUT_RULES.md`](docs/VTEX_CHECKOUT_RULES.md).
+estrictos para evitar errores cíclicos (CHK0041, pérdida de calle):
 
 | # | Tool | Hace | Regla |
 |---|------|------|-------|
@@ -59,16 +63,22 @@ estrictos para evitar errores cíclicos (CHK0041, pérdida de calle). Contrato c
 | 4 | `open_checkout` | Handoff de pago al browser | Falla si no pasó el Estado 3. El pago lo hacés vos |
 
 > **Stock local solo en `simulate_stock`, no en `search`.** El search de plazavea es global
-> por diseño (catálogo cacheado en CDN, no regionalizable —
-> [por qué](docs/VTEX_SEARCH_REGIONALIZATION.md)). `simulate_stock` es el único punto donde
-> VTEX expone disponibilidad por región, vía el orderForm.
+> por diseño (catálogo cacheado en CDN, no regionalizable por usuario). `simulate_stock` es
+> el único punto donde VTEX expone disponibilidad por región, vía el orderForm.
 
 ### Browser handoff (login y checkout)
 
-`open_login` y `open_checkout` te ofrecen dos opciones (el agente pregunta cuál preferís):
+`open_login` y `open_checkout` te ofrecen dos opciones (el agente pregunta cuál prefieres):
 **(A)** abre el navegador automáticamente en tu máquina, o **(B)** te da el comando para que
-lo corras en tu propia terminal. Ambas respetan el guardrail: el browser abre y **vos pagás**
+lo ejecutes en tu propia terminal. Ambas respetan el guardrail: el browser abre y **tú pagas**
 — el servidor nunca ejecuta el pago.
+
+## Limitaciones conocidas
+
+- 🔒 **Pago humano** — el CLI llega hasta el carrito; el checkout y el pago los haces tú en el browser. No automatizable por diseño (guardrail de seguridad).
+- ⚖️ **Productos de pesaje** — frutas, verduras y carnes vendidas por kg no se pueden agregar todavía (requieren un flujo de cantidad-por-peso que el modelo aún no maneja). En el roadmap.
+- 📄 **Búsqueda sin paginación** — `search` devuelve hasta `--limit 50` resultados; no hay scroll de páginas (suficiente para uso con agentes).
+- 🏪 **Solo Plaza Vea** — la arquitectura VTEX es portable a Wong, Tottus y Vivanda, pero aún no están implementados.
 
 ## Instalar
 
@@ -232,7 +242,7 @@ src/
   http.ts            → Cliente HTTP tipado + AppError (isSessionExpired)
   config.ts          → Config con Zod en ~/.config/plazavea/session.json
   schemas/           → Zod: product (PriceInfo 3 niveles), cart
-  services/          → Lógica por estado (ver docs/VTEX_CHECKOUT_RULES.md):
+  services/          → Lógica por estado (máquina de 4 estados VTEX):
                         shipping.ts    → núcleo aislado del envío (Híbrido Inteligente)
                         address.ts     → Estado 1 (anclaje de dirección)
                         cart.ts        → Estado 2 (solo items)
