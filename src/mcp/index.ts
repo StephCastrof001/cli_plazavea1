@@ -73,7 +73,7 @@ function launchDetached(script: string): boolean {
 // ── select_address (Fulfillment Gate) ────────────────────────────────────────
 server.tool(
   "select_address",
-  "PASO 1 OBLIGATORIO — Fulfillment Gate. Selecciona una dirección de entrega y la clava en el orderForm. A partir de aquí, el stock es 100% real para tu local. Llama get_addresses primero para ver las opciones.",
+  "PASO 1 OBLIGATORIO — Fulfillment Gate. Llama get_addresses, muestra las opciones al usuario y PREGUNTA cuál prefiere ANTES de invocar esta tool. NO asumas ni elijas solo. Una vez el usuario elija, clava esa dirección en el orderForm — el stock será 100% real para su local.",
   {
     addressIndex: z.number().describe("Índice de la dirección (0-based, de get_addresses)"),
   },
