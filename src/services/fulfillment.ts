@@ -1,5 +1,10 @@
 import { getProfileAddresses } from "./address.js";
-import { type SavedAddress, attachShipping, readOrderForm } from "./shipping.js";
+import {
+  type OrderFormWithShipping,
+  type SavedAddress,
+  attachShipping,
+  readOrderForm,
+} from "./shipping.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ESTADO 3 — Conciliación Logística + gate de checkout (Estado 4).
@@ -56,26 +61,42 @@ export async function simulateStock(skuId: string, addressId: string): Promise<S
   return parseSimulateResult(skuId, attached.shippingData?.logisticsInfo, address);
 }
 
+// Función pura — la decisión del gate de checkout (Estado 4). Testeable sin red.
+// Devuelve { ok:false, reason } con el mismo mensaje que assertCheckoutReady lanza.
+export function checkCheckoutReady(orderForm: OrderFormWithShipping): {
+  ok: boolean;
+  reason?: string;
+} {
+  const itemCount = orderForm.items?.length ?? 0;
+  if (itemCount === 0) {
+    return { ok: false, reason: "Carrito vacío. Agrega productos (add_to_cart) antes de checkout." };
+  }
+  const street = orderForm.shippingData?.address?.street;
+  if (!street || street.trim().length === 0) {
+    return {
+      ok: false,
+      reason:
+        "Dirección sin calle. Ejecuta select_address (Estado 1) y simulate_stock (Estado 3) antes de checkout.",
+    };
+  }
+  const logistics = orderForm.shippingData?.logisticsInfo ?? [];
+  const reconciled = logistics.filter((li) => li.selectedSla && li.selectedSla.length > 0).length;
+  if (reconciled < itemCount) {
+    return {
+      ok: false,
+      reason: `Logística sin reconciliar (${reconciled}/${itemCount} items). Ejecuta simulate_stock (Estado 3) antes de checkout.`,
+    };
+  }
+  return { ok: true };
+}
+
 // ESTADO 4 gate — stateless. open_checkout DEBE llamar esto antes de abrir el browser.
 // Falla si no se pasó por Estado 3 (calle ausente o logística sin reconciliar).
 export async function assertCheckoutReady(): Promise<void> {
   const of = await readOrderForm();
-  const itemCount = of.items?.length ?? 0;
-  if (itemCount === 0) {
-    throw new Error("Carrito vacío. Agrega productos (add_to_cart) antes de checkout.");
-  }
-  const street = of.shippingData?.address?.street;
-  if (!street || street.trim().length === 0) {
-    throw new Error(
-      "Dirección sin calle. Ejecuta select_address (Estado 1) y simulate_stock (Estado 3) antes de checkout.",
-    );
-  }
-  const logistics = of.shippingData?.logisticsInfo ?? [];
-  const reconciled = logistics.filter((li) => li.selectedSla && li.selectedSla.length > 0).length;
-  if (reconciled < itemCount) {
-    throw new Error(
-      `Logística sin reconciliar (${reconciled}/${itemCount} items). Ejecuta simulate_stock (Estado 3) antes de checkout.`,
-    );
+  const result = checkCheckoutReady(of);
+  if (!result.ok) {
+    throw new Error(result.reason);
   }
 }
 

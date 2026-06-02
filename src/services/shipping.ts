@@ -39,22 +39,26 @@ export interface OrderFormWithShipping {
 //     itemIndex:0 inexistente → CHK0041. (Principio del Carrito Vacío.)
 //   - itemCount  >  0 → body { address, logisticsInfo } JUNTOS en un POST.
 //     Separarlos borra la calle. (Principio del Carrito Lleno.)
+// Función pura — la decisión del body es testeable sin red.
+export function buildShippingBody(address: SavedAddress, itemCount: number) {
+  return itemCount > 0
+    ? {
+        address,
+        logisticsInfo: Array.from({ length: itemCount }, (_, i) => ({
+          itemIndex: i,
+          selectedSla: "Despacho a Domicilio",
+          selectedDeliveryChannel: "delivery",
+        })),
+      }
+    : { address };
+}
+
 export async function attachShipping(
   orderFormId: string,
   address: SavedAddress,
   itemCount: number,
 ): Promise<OrderFormWithShipping> {
-  const body =
-    itemCount > 0
-      ? {
-          address,
-          logisticsInfo: Array.from({ length: itemCount }, (_, i) => ({
-            itemIndex: i,
-            selectedSla: "Despacho a Domicilio",
-            selectedDeliveryChannel: "delivery",
-          })),
-        }
-      : { address };
+  const body = buildShippingBody(address, itemCount);
 
   return http.post<OrderFormWithShipping>(
     `${WWW_BASE_URL}/api/checkout/pub/orderForm/${orderFormId}/attachments/shippingData`,
