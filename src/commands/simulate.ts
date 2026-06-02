@@ -45,8 +45,19 @@ async function main() {
   }
 
   try {
-    process.stderr.write(chalk.dim(`Verificando stock local para SKU ${skuId}...\n`));
-    const result = await simulateStock(skuId, addressIndex);
+    // Resolver índice → addressId (simulate matchea por id estable, no por índice)
+    const addresses = await getAddresses();
+    const chosen = addresses[addressIndex];
+    if (!chosen) {
+      process.stderr.write(
+        chalk.red(`Dirección ${addressIndex} no existe. Tienes ${addresses.length} guardadas.\n`),
+      );
+      process.exit(1);
+    }
+    process.stderr.write(
+      chalk.dim(`Verificando stock para SKU ${skuId} en ${chosen.neighborhood}...\n`),
+    );
+    const result = await simulateStock(skuId, chosen.addressId);
 
     if (outputJson) {
       process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);

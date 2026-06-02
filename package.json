@@ -40,6 +40,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "smoke": "bun run scripts/smoke.ts",
     "smoke:mcp": "bun run scripts/smoke-mcp.ts",
+    "smoke:checkout": "bun run scripts/smoke-checkout.ts",
     "lint": "biome check src/",
     "lint:fix": "biome check --write src/"
   },

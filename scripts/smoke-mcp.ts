@@ -28,6 +28,7 @@ const EXPECTED = [
   "get_addresses",
   "simulate_stock",
   "open_checkout",
+  "open_login",
 ];
 
 let pass = 0;

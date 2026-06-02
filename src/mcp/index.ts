@@ -1,5 +1,7 @@
 ﻿import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { spawn } from "node:child_process";
+import path from "node:path";
 import { z } from "zod";
 import { getSelectedAddressIndex, requireAddress, requireSession } from "../config.js";
 import { AppError } from "../http.js";
@@ -46,10 +48,32 @@ function catchErr(e: unknown) {
   return fail(`${msg}${hint}`);
 }
 
+// Raíz del repo resuelta dinámicamente (NO hardcodear paths de usuario).
+// src/mcp/index.ts → ../../ = raíz.
+const ROOT = path.resolve(import.meta.dir, "..", "..");
+const TSX = "node_modules/tsx/dist/cli.mjs";
+
+// Lanza un runner Playwright en proceso SEPARADO bajo Node+tsx.
+// ADR-0001: Playwright cuelga bajo Bun; el MCP (Bun) solo hace spawn, no toca Chromium.
+// detached + stdio:"ignore" = no bloquea ni corrompe el stdio JSON-RPC del MCP.
+function launchDetached(script: string): boolean {
+  try {
+    const child = spawn("node", [TSX, script], {
+      cwd: ROOT,
+      detached: true,
+      stdio: "ignore",
+    });
+    child.unref();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 // ── select_address (Fulfillment Gate) ────────────────────────────────────────
 server.tool(
   "select_address",
-  "PASO 1 OBLIGATORIO — Fulfillment Gate. Selecciona una dirección de entrega y la clava en el orderForm. A partir de aquí, el stock es 100% real para tu local. Llama get_addresses primero para ver las opciones.",
+  "PASO 1 OBLIGATORIO — Fulfillment Gate. Llama get_addresses, muestra las opciones al usuario y PREGUNTA cuál prefiere ANTES de invocar esta tool. NO asumas ni elijas solo. Una vez el usuario elija, clava esa dirección en el orderForm — el stock será 100% real para su local.",
   {
     addressIndex: z.number().describe("Índice de la dirección (0-based, de get_addresses)"),
   },
@@ -281,46 +305,80 @@ server.tool(
 // ── simulate_stock ───────────────────────────────────────────────────────────
 server.tool(
   "simulate_stock",
-  "Verifica si un producto tiene stock en TU local (no el global), usando una dirección guardada. Devuelve disponibilidad, almacén y estimado de entrega. Úsalo ANTES de add_to_cart para evitar que el checkout falle por falta de stock local.",
+  "Verifica si un producto tiene stock en TU local (no el global), para una dirección específica. Devuelve disponibilidad, almacén y estimado de entrega. Llama get_addresses primero y PREGUNTA al usuario qué dirección quiere usar — el stock depende de la dirección elegida. Úsalo ANTES de add_to_cart.",
   {
     skuId: z.string().describe("SKU ID del producto (de search_products)"),
-    addressIndex: z
-      .number()
-      .optional()
-      .describe("Índice de la dirección guardada (default 0). Ver get_addresses."),
+    addressId: z
+      .string()
+      .describe("addressId de la dirección elegida por el usuario (de get_addresses). El stock se calcula para ESA dirección."),
   },
-  async ({ skuId, addressIndex }) => {
+  async ({ skuId, addressId }) => {
     try {
       requireSession();
-      return ok(await simulateStock(skuId, addressIndex ?? 0));
+      return ok(await simulateStock(skuId, addressId));
     } catch (e) {
       return catchErr(e);
     }
   },
 );
 
-// ── open_checkout (Browser Handoff Instruction) ──────────────────────────────
-// ADR-0001: Playwright cuelga bajo Bun en Windows — el MCP server no puede
-// lanzar Chromium directamente. La tool devuelve el comando para que el usuario
-// lo ejecute desde su propia terminal (con sesión de escritorio completa).
+// ── open_checkout (Browser Handoff: auto + fallback) ─────────────────────────
+// ADR-0001: Playwright cuelga bajo Bun. auto=true → spawn detached de un runner
+// Node+tsx (no bloquea el MCP). auto=false → devuelve el comando manual.
+// El comando manual SIEMPRE viaja en la respuesta como respaldo.
 server.tool(
   "open_checkout",
-  "PASO 4 — Browser Handoff. Retorna el comando que el usuario debe ejecutar en su terminal para abrir Chromium con las cookies de sesión inyectadas y el carrito precargado. El pago es exclusivamente humano.",
-  {},
-  async () => {
+  "PASO 4 — Browser Handoff (pago). ANTES de invocar, OBLIGATORIO preguntar al usuario: '¿Quieres que abra el navegador automáticamente (te aparece la ventana de pago ya) o prefieres ejecutar el comando desde tu propia terminal?'. Opción 1 = auto=true (abre el browser con sesión+carrito directo). Opción 2 = auto=false (te doy el comando para tu terminal). NO invocar hasta que el usuario elija. El pago es exclusivamente humano — este servidor NO ejecuta transacciones.",
+  {
+    auto: z
+      .boolean()
+      .describe(
+        "REQUERIDO. true: abre el navegador automáticamente. false: devuelve el comando manual. Pregunta al usuario qué prefiere ANTES de invocar.",
+      ),
+  },
+  async ({ auto }) => {
     try {
       requireSession();
       requireAddress();
     } catch (e) {
       return catchErr(e);
     }
+    const command = `node ${TSX} src/scripts/handoff.ts`;
+    const launched = auto ? launchDetached("src/scripts/handoff.ts") : false;
     return ok({
       ready: true,
-      message:
-        "Carrito listo. Para abrir la ventana de pago con tu sesión activa, ejecuta este comando en tu PowerShell:",
-      command: "node node_modules/tsx/dist/cli.mjs src/scripts/handoff.ts",
-      cwd: "C:/Users/HP SUPPORT/klipso_reverse/Cli-propios/plazavea-cli",
+      browser_launched: launched,
+      message: launched
+        ? "Navegador abriéndose en tu máquina con tu carrito precargado. Completa el pago ahí."
+        : "Ejecuta este comando en tu PowerShell para abrir el pago con tu sesión activa:",
+      command, // respaldo siempre presente, incluso en modo auto
+      cwd: ROOT,
       note: "El pago es exclusivamente humano. Este servidor NO ejecuta transacciones.",
+    });
+  },
+);
+
+// ── open_login (auto + fallback) ─────────────────────────────────────────────
+server.tool(
+  "open_login",
+  "Inicia sesión en Plaza Vea. ANTES de invocar, OBLIGATORIO preguntar: '¿Quieres que abra el navegador de login automáticamente (te aparece la ventana ya) o prefieres ejecutar el comando desde tu propia terminal?'. Opción 1 = auto=true. Opción 2 = auto=false (comando para tu terminal). NO invocar hasta que el usuario elija.",
+  {
+    auto: z
+      .boolean()
+      .describe(
+        "REQUERIDO. true: abre el navegador de login automáticamente. false: devuelve el comando manual. Pregunta al usuario qué prefiere ANTES de invocar.",
+      ),
+  },
+  async ({ auto }) => {
+    const command = `node ${TSX} src/commands/login.ts`;
+    const launched = auto ? launchDetached("src/commands/login.ts") : false;
+    return ok({
+      browser_launched: launched,
+      message: launched
+        ? "Navegador de login abriéndose. Inicia sesión en la ventana; la cookie se captura sola."
+        : "Ejecuta este comando en tu PowerShell para iniciar sesión:",
+      command, // respaldo siempre presente
+      cwd: ROOT,
     });
   },
 );
