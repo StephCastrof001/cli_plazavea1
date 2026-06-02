@@ -94,26 +94,33 @@ interface OrderFormWithShipping {
 // Esto hace que simulate_stock y el carrito usen stock local real desde el inicio.
 export async function selectFulfillmentAddress(addressIndex: number): Promise<SavedAddress> {
   const raw = await http.get<OrderFormWithShipping>(`${WWW_BASE_URL}${ENDPOINTS.orderForm}`);
-  const address = raw.shippingData?.availableAddresses?.[addressIndex] ?? null;
+  // Dirección COMPLETA desde profile (con street). Si clavamos availableAddresses
+  // del orderForm (street:null) y el usuario va directo a checkout SIN pasar por
+  // simulate_stock, el pago se rechaza con "campo calle no válido". Una sola fuente
+  // de verdad (profile) para selectFulfillment y simulate elimina ese path roto.
+  const addresses = await getProfileAddresses();
+  const address = addresses[addressIndex] ?? null;
   if (!address)
     throw new Error(
       `Dirección ${addressIndex} no encontrada. Usa get_addresses para ver las disponibles.`,
     );
 
-  const shippingUrl = `${WWW_BASE_URL}/api/checkout/pub/orderForm/${raw.orderFormId}/attachments/shippingData`;
-  // Step 1: clavar solo la dirección (funciona con carrito vacío)
-  await http.post(shippingUrl, { address });
-  // Step 2: clavar logisticsInfo solo si hay ítems en el carrito
-  const itemCount = raw.items?.length ?? 0;
-  if (itemCount > 0) {
-    await http.post(shippingUrl, {
+  // UN solo POST con address + logisticsInfo juntos — igual que simulateStock.
+  // El split en 2 POSTs (address solo, luego logisticsInfo) dejaba el address en
+  // estado vacío al re-leer el orderForm: VTEX descarta una dirección clavada sin
+  // logisticsInfo asociado. Math.max(.,1) cubre el carrito vacío (Paso 1 del flujo).
+  const itemCount = Math.max(raw.items?.length ?? 0, 1);
+  await http.post(
+    `${WWW_BASE_URL}/api/checkout/pub/orderForm/${raw.orderFormId}/attachments/shippingData`,
+    {
+      address,
       logisticsInfo: Array.from({ length: itemCount }, (_, i) => ({
         itemIndex: i,
         selectedSla: "Despacho a Domicilio",
         selectedDeliveryChannel: "delivery",
       })),
-    });
-  }
+    },
+  );
 
   saveSelectedAddress(addressIndex);
   return address;

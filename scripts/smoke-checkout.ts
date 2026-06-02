@@ -5,7 +5,7 @@
 // Uso: bun run scripts/smoke-checkout.ts
 import { WWW_BASE_URL, ENDPOINTS } from "../src/constants.js";
 import { http } from "../src/http.js";
-import { getAddresses, simulateStock } from "../src/services/cart.js";
+import { getAddresses, selectFulfillmentAddress, simulateStock } from "../src/services/cart.js";
 
 let pass = 0;
 let fail = 0;
@@ -24,6 +24,22 @@ try {
   if (conStreet.length === addrs.length && addrs.length > 0)
     ok("todas las direcciones tienen street (fuente profile, no orderForm stripped)");
   else ko(`${addrs.length - conStreet.length} direcciones SIN street → checkout rechazaría`);
+
+  // 1.5 PATH SIN SIMULATE — el agente puede ir select_address → add → checkout
+  // saltándose simulate_stock. selectFulfillmentAddress debe clavar street COMPLETO
+  // por sí solo, no depender de que simulate sobreescriba después. Este check
+  // cierra el blind spot: antes el test corría simulate primero y nunca veía el
+  // path roto donde selectFulfillment clavaba street:null.
+  if (addrs.length > 0) {
+    await selectFulfillmentAddress(0);
+    const afterSelect = await http.get<{ shippingData?: { address?: { street?: string | null } } }>(
+      `${WWW_BASE_URL}${ENDPOINTS.orderForm}`,
+    );
+    const clavadaSelect = afterSelect.shippingData?.address?.street;
+    if (clavadaSelect && clavadaSelect.trim().length > 0)
+      ok(`select_address clava street SIN simulate ("${clavadaSelect}") — path directo a checkout OK`);
+    else ko("select_address clava street:null → checkout falla si el usuario salta simulate");
+  }
 
   // 2. simular un item del carrito → la dirección resuelta tiene street
   const of = await http.get<{ items?: Array<{ id: string }> }>(`${WWW_BASE_URL}${ENDPOINTS.orderForm}`);
