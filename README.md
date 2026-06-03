@@ -27,16 +27,16 @@ El agente busca, confirma con `simulate_stock` que el producto llega a **tu loca
 
 La app de Plaza Vea muestra tus órdenes pero no las suma, no las analiza, y no hay forma de que un agente AI opere tus compras. Este CLI crea ese canal.
 
-**AHA moment:** Le pides a tu agente *"agrega leche Gloria para mi casa en Comas"*.
-Busca, simula el stock en **tu local**, y descubre que en Comas no hay — aunque la web
+**AHA moment:** Le pides a tu agente *"agrega leche Gloria para mi casa en Lince"*.
+Busca, simula el stock en **tu local**, y descubre que en Lince no hay — aunque la web
 la muestre "disponible". Te avisa **antes** de agregarla, en vez de que el checkout
 falle al final. Ni la app ni la web hacen eso.
 
 ```bash
 # Lo mismo desde tu terminal (o vía MCP), sin abrir el browser:
-plazavea select-address 0                      # tu local: Comas
+plazavea simulate --list-addresses             # tus direcciones (0 = Lince, 1 = Cercado)
 plazavea search "leche gloria"                 # catálogo + precios reales
-plazavea simulate --sku 11389962               # ✖ sin stock en Comas (la web diría "disponible")
+plazavea simulate --sku 11389962 --address 0   # ✖ sin stock en Lince (la web diría "disponible")
 plazavea simulate --sku 11389962 --address 1   # ✔ sí hay en Cercado
 # Agregas solo lo que tu local sí tiene → el checkout no falla.
 ```

@@ -12,7 +12,7 @@ Ver `docs/problem-statement.md` para contexto completo.
 - Validación: **Zod v4**
 - Linter: **Biome** (`biome check src/`)
 - UI: bloques cligentic en `src/cli/`
-- MCP: `src/mcp/index.ts` — 12 tools (v3.2.0)
+- MCP: `src/mcp/index.ts` — 14 tools (v3.2.0)
 
 ## 🛑 GUARDRAIL DE SEGURIDAD — frontera Humano/IA (INVIOLABLE)
 
@@ -34,7 +34,7 @@ Ver `docs/problem-statement.md` para contexto completo.
 - **Nunca ejecutar pagos.** Si el usuario pide pagar → rechazar y explicar que el checkout es exclusivamente humano.
 - **Sesión expirada.** Si cualquier tool devuelve "Sesión VTEX caducada" → indicar al usuario que ejecute `plazavea login`.
 - **Estado de pedidos — NUNCA alucinar.** Usar SIEMPRE el campo `statusLabel` de cada orden (calculado desde `VTEX_STATUS_MAP`). PROHIBIDO interpretar el campo `status` crudo como "pendiente" o cualquier otro texto libre. Si `status = "invoiced"` → el pedido está "Facturado / Enviado", NO pendiente. Si el status no está en el mapa → mostrarlo tal cual sin traducir.
-- **Máquina de 4 estados (Contrato: `docs/VTEX_CHECKOUT_RULES.md`) — SIEMPRE en orden:**
+- **Máquina de 4 estados (Contrato: ver §Flujo en README) — SIEMPRE en orden:**
   1. **Estado 1** `select_address` → ancla la ubicación (solo ancla, no valida stock). Funciona con carrito vacío.
   2. **Estado 2** `search_products` (tabla 4 cols) + `add_to_cart` → arma el pedido. PROHIBIDO tocar envío aquí.
   3. **Estado 3** `simulate_stock` → reconcilia logística y valida stock local. DESPUÉS de add. OBLIGATORIO antes de checkout.
@@ -85,7 +85,7 @@ Si encuentras algo nuevo (endpoint, gotcha, comportamiento inesperado de VTEX):
 | **1. Fulfillment** | Popup "Elige dirección" | `plazavea select-address N` | Tool `select_address` | `requireAddress()` — bloqueo fuerte, sin dirección no hay stock real |
 | **2. Búsqueda** | Barra de búsqueda web | `plazavea search <query>` | Tool `search_products` | `requireSession()` + `requireAddress()` |
 | **3. Carrito** | Botones "Agregar" + minicarrito | `plazavea add` / `plazavea remove` / `plazavea cart` | Tools `add_to_cart` / `remove_from_cart` / `get_cart` | `requireSession()` — modifica `orderForm` VTEX |
-| **4. Checkout** | Redirect `/checkout/#/cart` + pago manual | `plazavea checkout` → Playwright headed (Node+tsx) | Tool `open_checkout` → retorna comando PowerShell | `requireSession()` + `requireAddress()` |
+| **4. Checkout** | Redirect `/checkout/#/cart` + pago manual | `plazavea buy` → Playwright headed (Node+tsx) | Tool `open_checkout` → retorna comando PowerShell | `requireSession()` + `requireAddress()` |
 | **5. Post-venta** | "Mis Pedidos" web | `plazavea orders` | Tool `get_orders` | `requireSession()` — solo lectura |
 
 ### Diagrama de Flujo
@@ -103,7 +103,7 @@ graph TD
         C1[plazavea login\nPlaywright Node+tsx] --> C2[plazavea select-address N]
         C2 --> C3[plazavea search]
         C3 --> C4[plazavea add]
-        C4 --> C5[plazavea checkout\nPlaywright Node+tsx]
+        C4 --> C5[plazavea buy\nPlaywright Node+tsx]
     end
 
     subgraph TO_BE_MCP ["TO-BE: MCP (Modo Agente AI)"]
@@ -148,5 +148,5 @@ requireAddress()  → src/config.ts:87  — lanza Error si selectedAddressIndex 
 ```
 
 Aplicado en:
-- MCP: todas las tools que tocan VTEX API (11 de 12)
+- MCP: todas las tools que tocan VTEX API (todas salvo los handoffs de browser `open_login` / `open_checkout`)
 - CLI: `buy`, `add`, `simulate`, `cart` — al inicio de `main()`, antes del try-catch
